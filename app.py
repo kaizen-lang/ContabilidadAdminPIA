@@ -1,15 +1,18 @@
 import pandas as pd
-import tabulate as t
+from tabulate import tabulate
+pd.set_option('display.float_format', lambda x: '%.9f' % x)
+
+class Salir(Exception):
+    pass
+
 
 def negrita(texto: str) -> str:
     return f'\033[1m{texto}\033[0m'
 
-def pedir_salida() -> bool:
-    salida = pedir_campo("¿Quiere salir? (S)í o (N)o: ").capitalize()
+def pedir_salida() -> None | Exception:
+    salida = input("¿Quiere salir? (S)í o (N)o: ").capitalize()
     if salida == "S":
-        return True
-    else:
-        return False
+        raise Salir
 
 def pedir_campo(mensaje: str) -> str:
     while True:
@@ -23,11 +26,7 @@ def pedir_campo(mensaje: str) -> str:
 
         except ValueError as e:
             print(f"Error: {e}")
-
-            salir = pedir_salida()
-            if salir:
-                return
-
+            pedir_salida()
             continue
 
 def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
@@ -35,24 +34,27 @@ def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
         try:
             entrada = int(pedir_campo(mensaje))
 
-            if min or max: #Si se especificaron cualquiera de las dos variables
-                if entrada < min or entrada > max:
-                    raise ValueError("Número fuera del rango especificado.")
+            if (min is not None):
+                if entrada < min:
+                    raise ValueError(f"El número debe ser mayor o igual a {min}")
+
+            if (max is not None):
+                if entrada > max:
+                    raise ValueError(f"El número debe ser menor o igual a {max}")
+
 
             return entrada
+
         except ValueError as e:
             print(f"Error: {e}")
-
-            salir = pedir_salida()
-            if salir:
-                return
-
+            pedir_salida()
             continue
 
 def punto_equilibrio_menu() -> None:
     while True:
+
         print("-"*92)
-        print(f"|{"Usted escogió: Punto de equilibrio":^90}|")
+        print(f"|{negrita('Usted escogió: Punto de equilibrio'):^98}|")
         print(f"|{'-'*90}|")
         print(f"|{"¿Normal o multilínea?":^90}|")
         print(f"|{"(1) - Normal":^90}|")
@@ -60,20 +62,167 @@ def punto_equilibrio_menu() -> None:
         print(f"|{"(3) - Regresar al menú principal":^90}|")
         print("-"*92)
 
-        opcion = pedir_numero("Escriba el número de la opción que va a escoger: ", 1, 3)
+        opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 3)
 
         match opcion:
             case 1:
-                pass
+                punto_equilibrio_normal()
             case 2:
-                pass
+                punto_equilibrio_multilinea()
             case 3:
                 return
+
+def punto_equilibrio_normal() -> None:
+
+    try:
+        print("-"*92)
+        precio_venta = pedir_numero("1. Ingrese el precio de venta: ", 0)
+        print("-"*92)
+        costo_variable = pedir_numero("2. Ingrese el costo variable: ", 0)
+        print("-"*92)
+        costo_fijo = pedir_numero("3. Ingrese el costo fijo: ", 0)
+        print("-"*92)
+
+        margen_contribucion_unitario = precio_venta - costo_variable
+        punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
+        punto_equilibrio_pesos = punto_equilibrio_unidades * precio_venta
+
+        print("\n")
+        print("-"*92)
+        print(f"|{f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}':^90}|")
+        print(f"|{f'El punto de equilibrio en pesos es: {punto_equilibrio_pesos}':^90}|")
+        print("-"*92)
+        print("\n")
+
+    except ZeroDivisionError:
+        print("Error: división por cero.")
+
+
+
+
+def punto_equilibrio_multilinea() -> None:
+
+    contador_productos = 1
+    df_datos = pd.DataFrame()
+    suma_porcentaje = 0
+
+    while True:
+        print("-"*92)
+        print(f"|{negrita(f'Producto {contador_productos}'):^98}|")
+        print("-"*92)
+
+        nombre_producto = pedir_campo('Escriba el nombre del producto: ')
+        porcentaje_margen_contribucion = pedir_numero('Escriba el porcentaje del margen de contribución: ', 0, 100)
+        suma_porcentaje += porcentaje_margen_contribucion
+
+        if suma_porcentaje > 100:
+            print("-"*92)
+            print(f"|{'ADVERTENCIA':^90}|")
+            print(f"|{'La suma de porcentajes proporcionada hasta ahora supera el 100%':^90}|")
+            print(f"|{'¿Está seguro de querer continuar?':^90}|")
+            print(f"|{'(S) - Sí':^90}|")
+            print(f"|{'(N) - No':^90}|")
+            print("-"*92)
+
+            confirmar = pedir_campo("Respuesta: ").capitalize()
+
+            if confirmar == "N":
+                break
+
+
+        precio_venta = pedir_numero('Escriba el precio de venta: ', 0)
+        costo_variable = pedir_numero('Escriba el costo variable: ', 0)
+        margen_contribucion = pedir_numero('Escriba el margen de contribución: ', 0)
+
+        df_datos[nombre_producto] = [porcentaje_margen_contribucion, precio_venta, costo_variable, margen_contribucion]
+
+        contador_productos += 1
+
+        print("-"*92)
+        print(f"|{'¿Quiere añadir otro producto?':^90}|")
+        print(f"|{'(S) - Sí':^90}|")
+        print(f"|{'(N) - No':^90}|")
+        print("-"*92)
+
+        continuar = pedir_campo("Respuesta: ").capitalize()
+
+        if continuar == "N":
+            break
+
+    df_datos.index = ['% de Margen de contribución', 'Precio de venta', 'Costo variable', 'Margen de contribución']
+
+    costo_fijo = pedir_numero('Escriba el costo fijo: ', 0)
+
+    print("\n")
+    print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+
+    df_margen_ponderado = pd.DataFrame()
+    margen_contribucion_unitario = 0
+
+    for columna in df_datos:
+        margen_contribucion = df_datos.loc['Margen de contribución', columna]
+        porcentaje_margen_contribucion = df_datos.loc['% de Margen de contribución', columna]
+        margen_contribucion_ponderado = margen_contribucion * (porcentaje_margen_contribucion / 100)
+
+        margen_contribucion_unitario += margen_contribucion_ponderado
+
+        df_margen_ponderado[columna] = [margen_contribucion, porcentaje_margen_contribucion, margen_contribucion_ponderado]
+
+    df_margen_ponderado.index = ['Margen de contribución', 'Porcentaje del margen de contribución', 'Margen de contribución ponderado']
+
+    print("\n")
+    print(tabulate(df_margen_ponderado, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
+
+    print("\n")
+    print('-'*92)
+    print(f"|{f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades:,.2f}':^90}|")
+    print(f"|{'A continuación se mostrará la ponderación':^90}|")
+    print('-'*92)
+
+    df_punto_equilibrio_unidades = pd.DataFrame()
+
+    for columna in df_datos:
+        porcentaje_margen_contribucion = df_datos.loc['% de Margen de contribución', columna]
+        punto_equilibrio_por_unidad = punto_equilibrio_unidades * (porcentaje_margen_contribucion / 100)
+
+        df_punto_equilibrio_unidades[columna] = [porcentaje_margen_contribucion, punto_equilibrio_unidades, punto_equilibrio_por_unidad]
+
+    df_punto_equilibrio_unidades.index = ['Porcentaje del margen de contribución', 'Punto de equilibrio en unidades', 'Punto de equilibrio por unidad']
+
+    print("\n")
+    print(tabulate(df_punto_equilibrio_unidades.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    df_punto_equilibrio_pesos = pd.DataFrame()
+    total_punto_equilibrio_pesos = 0
+
+    for columna in df_punto_equilibrio_unidades:
+        punto_equilibrio_por_unidad = df_punto_equilibrio_unidades.loc['Punto de equilibrio por unidad', columna]
+        precio_venta = df_datos.loc['Precio de venta', columna]
+        punto_equilibrio_pesos = punto_equilibrio_por_unidad * precio_venta
+        total_punto_equilibrio_pesos += punto_equilibrio_pesos
+
+        df_punto_equilibrio_pesos[columna] = [punto_equilibrio_por_unidad, precio_venta, punto_equilibrio_pesos]
+
+    df_punto_equilibrio_pesos.index = ['Punto de equilibrio por unidad', 'Precio de venta', 'Punto de equilibrio en pesos']
+
+    print("\n")
+    print(tabulate(df_punto_equilibrio_pesos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+    print("\n")
+
+    print("-"*92)
+    print(f"|{f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades:,.2f}':^90}|")
+    print(f"|{f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}':^90}|")
+    print("-"*92)
+
+    pedir_salida()
 
 def utilidad_impuestos_menu() -> None:
     while True:
         print("-"*92)
-        print(f"|{negrita('Usted escogió: Utilidad antes/después de impuestos'):^90}|")
+        print(f"|{negrita('Usted escogió: Utilidad antes/después de impuestos'):^98}|")
         print(f"|{'-'*90}|")
         print(f"|{'¿Normal o multilínea?':^90}|")
         print(f"|{'(1) - Normal':^90}|")
@@ -81,7 +230,7 @@ def utilidad_impuestos_menu() -> None:
         print(f"|{'(3) - Regresar al menú principal':^90}|")
         print("-"*92)
 
-        opcion = pedir_numero("Escriba el número de la opción que va a escoger: ", 1, 3)
+        opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 3)
 
         match opcion:
             case 1:
@@ -94,34 +243,37 @@ def utilidad_impuestos_menu() -> None:
 
 def menu() -> None:
     while True:
-        print("-"*92)
-        print(f"|{negrita('Bienvenido al programa contable'):^98}|")
-        print(f"|{'-'*90}|")
+        try:
+            print("-"*92)
+            print(f"|{negrita('Bienvenido al programa contable'):^98}|")
+            print(f"|{'-'*90}|")
 
-        print(f"|{negrita('Escoge la opción que quieres hacer: '):^98}|")
-        print(f"|{'(1) - Punto de equilibrio en unidades/pesos normal o multilínea':^90}|")
-        print(f"|{'(2) - Utilidad antes/después de impuestos normal o multilínea':^90}|")
-        print(f"|{'(3) - Análisis Costo - Volumen - Utilidad ':^90}|")
-        print(f"|{'(4) - Presupuesto de Ventas y Producción':^90}|")
-        print(f"|{'(5) - Presupuesto de necesidades de Materias Primas y Compras':^90}|")
-        print(f"|{'(6) - Salir del programa':^90}|")
-        print("-"*92)
+            print(f"|{negrita('Escoge la opción: '):^98}|")
+            print(f"|{'(1) - Punto de equilibrio en unidades/pesos normal o multilínea':^90}|")
+            print(f"|{'(2) - Utilidad antes/después de impuestos normal o multilínea':^90}|")
+            print(f"|{'(3) - Análisis Costo - Volumen - Utilidad ':^90}|")
+            print(f"|{'(4) - Presupuesto de Ventas y Producción':^90}|")
+            print(f"|{'(5) - Presupuesto de necesidades de Materias Primas y Compras':^90}|")
+            print(f"|{'(6) - Salir del programa':^90}|")
+            print("-"*92)
 
-        opcion = pedir_numero("Escribe el número de la opción que vas a escoger: ", 1, 6)
+            opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 6)
 
-        match opcion:
-            case 1:
-                punto_equilibrio_menu()
-            case 2:
-                utilidad_impuestos_menu()
-            case 3:
-                pass
-            case 4:
-                pass
-            case 5:
-                pass
-            case 6:
-                break
+            match opcion:
+                case 1:
+                    punto_equilibrio_menu()
+                case 2:
+                    utilidad_impuestos_menu()
+                case 3:
+                    pass
+                case 4:
+                    pass
+                case 5:
+                    pass
+                case 6:
+                    break
+        except Salir:
+            continue
 
 
 
