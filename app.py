@@ -1,20 +1,54 @@
 import pandas as pd
 from tabulate import tabulate
+
+#Cambiamos el formato de los tipos de dato float
 pd.set_option('display.float_format', lambda x: '%.9f' % x)
 
 class Salir(Exception):
+    """Excepción usada para regresar al menú principal."""
     pass
 
 
 def negrita(texto: str) -> str:
+    """Retorna un F-string con un formato de negritas.
+
+    Args:
+        texto (str): Texto que será convertido a negritas.
+
+    Returns:
+        str: F-string con el estilo aplicado.
+    """
+
     return f'\033[1m{texto}\033[0m'
 
 def pedir_salida() -> None | Exception:
+    """Pregunta al usuario si quiere regresar al menú principal.
+
+    Raises:
+        Salir: Excepción que regresa al menú principal.
+
+    Returns:
+        None | Exception: Lanza la excepción sólo si el usuario acepta salir.
+    """
+
     salida = input("¿Quiere salir? (S)í o (N)o: ").capitalize()
+
     if salida == "S":
         raise Salir
 
 def pedir_campo(mensaje: str) -> str:
+    """Pide al usuario que introduzca un campo no vacío.
+
+    Args:
+        mensaje (str): Mensaje que se mostrará al usuario.
+
+    Raises:
+        ValueError: Si el usuario dejó el campo vacío.
+
+    Returns:
+        str: Mensaje ya validado.
+    """
+
     while True:
         try:
             entrada = input(mensaje).strip()
@@ -26,14 +60,33 @@ def pedir_campo(mensaje: str) -> str:
 
         except ValueError as e:
             print(f"Error: {e}")
+
             pedir_salida()
+
             continue
 
 def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
+    """Pide que el usuario introduzca un número válido.
+
+    Args:
+        mensaje (str): Mensaje que se mostrará al usuario.
+        min (int, optional): Valor mínimo. Defaults to None.
+        max (int, optional): Valor máximo. Defaults to None.
+
+    Raises:
+        ValueError: El número es menor al mínimo especificado.
+        ValueError: El número es mayor al máximo especificado.
+
+    Returns:
+        int: Número ya validado.
+    """
+
     while True:
         try:
             entrada = int(pedir_campo(mensaje))
 
+            #Checamos de manera individual si se especificó cada parámetro
+            #y lo comparamos con la entrada en caso verdadero.
             if (min is not None):
                 if entrada < min:
                     raise ValueError(f"El número debe ser mayor o igual a {min}")
@@ -51,6 +104,8 @@ def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
             continue
 
 def punto_equilibrio_menu() -> None:
+    """Menú que muestra las opciones para el punto de equilibrio."""
+
     while True:
 
         print("-"*92)
@@ -73,6 +128,7 @@ def punto_equilibrio_menu() -> None:
                 return
 
 def punto_equilibrio_normal() -> None:
+    """Función que muestra una interfaz para determinar el punto de equilibrio normal."""
 
     try:
         print("-"*92)
@@ -101,10 +157,13 @@ def punto_equilibrio_normal() -> None:
 
 
 def punto_equilibrio_multilinea() -> None:
+    """Función que muestra una interfaz para determinar el punto de equilibrio multilínea."""
 
     contador_productos = 1
-    df_datos = pd.DataFrame()
-    suma_porcentaje = 0
+
+    df_datos = pd.DataFrame() #DataFrame que contendrá los datos del problema
+
+    suma_porcentaje = 0 #Utilizado para verificar que no se pase del 100%
 
     while True:
         print("-"*92)
@@ -193,6 +252,7 @@ def punto_equilibrio_multilinea() -> None:
     df_punto_equilibrio_unidades.index = ['Porcentaje del margen de contribución', 'Punto de equilibrio en unidades', 'Punto de equilibrio por unidad']
 
     print("\n")
+    #Usamos la matriz transpuesta para cambiar las columnas por las filas.
     print(tabulate(df_punto_equilibrio_unidades.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
     df_punto_equilibrio_pesos = pd.DataFrame()
@@ -217,9 +277,12 @@ def punto_equilibrio_multilinea() -> None:
     print(f"|{f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}':^90}|")
     print("-"*92)
 
+    #En esta ocasión lo usamos para que el usuario pueda ver los resultados y escoja si regresar o no al menú.
     pedir_salida()
 
 def utilidad_impuestos_menu() -> None:
+    """Función que muestra un menú para la opción de utilidad de impuestos."""
+
     while True:
         print("-"*92)
         print(f"|{negrita('Usted escogió: Utilidad antes/después de impuestos'):^98}|")
@@ -242,6 +305,8 @@ def utilidad_impuestos_menu() -> None:
 
 
 def menu() -> None:
+    """Función que le muestra el menú principal al usuario."""
+
     while True:
         try:
             print("-"*92)
@@ -276,9 +341,5 @@ def menu() -> None:
             continue
 
 
-
-def main():
-    menu()
-
 if __name__ == "__main__":
-    main()
+    menu()
