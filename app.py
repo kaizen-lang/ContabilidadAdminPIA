@@ -1,9 +1,12 @@
+######################## IMPORT Y OPCIONES GLOBALES ########################
 import pandas as pd
 from tabulate import tabulate
 
 #Cambiamos el formato de los tipos de dato float
 pd.set_option('display.float_format', lambda x: '%.9f' % x)
 
+
+######################## UTILIDADES ########################
 class Salir(Exception):
     """Excepción usada para regresar al menú principal."""
     pass
@@ -31,7 +34,16 @@ def pedir_salida() -> None | Exception:
         None | Exception: Lanza la excepción sólo si el usuario acepta salir.
     """
 
-    salida = input("¿Quiere salir? (S)í o (N)o: ").capitalize()
+    print("\n")
+    print("-"*92)
+    print(f"|{'¿Desea regresar al menú principal?':^90}|")
+    print(f"|{'-'*90}|")
+    print(f"|{'(S) - Sí':^90}|")
+    print(f"|{'(N) - No':^90}|")
+    print("-"*92)
+    print(f"{negrita('Respuesta: ')}", end="")
+
+    salida = input().capitalize()
 
     if salida == "S":
         raise Salir
@@ -59,7 +71,7 @@ def pedir_campo(mensaje: str) -> str:
             return entrada
 
         except ValueError as e:
-            print(f"Error: {e}")
+            print(f"{negrita('Error')}: {e}")
 
             pedir_salida()
 
@@ -99,10 +111,12 @@ def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
             return entrada
 
         except ValueError as e:
-            print(f"Error: {e}")
+            print(f"{negrita('Error')}: {e}")
+
             pedir_salida()
             continue
 
+######################## PUNTO DE EQUILIBRIO ########################
 def punto_equilibrio_menu() -> None:
     """Menú que muestra las opciones para el punto de equilibrio."""
 
@@ -151,7 +165,7 @@ def punto_equilibrio_normal() -> None:
         print("\n")
 
     except ZeroDivisionError:
-        print("Error: división por cero.")
+        print(f"{negrita('Error')}: división por cero.")
 
 
 
@@ -176,7 +190,7 @@ def punto_equilibrio_multilinea() -> None:
 
         if suma_porcentaje > 100:
             print("-"*92)
-            print(f"|{'ADVERTENCIA':^90}|")
+            print(f"|{negrita('ADVERTENCIA'):^98}|")
             print(f"|{'La suma de porcentajes proporcionada hasta ahora supera el 100%':^90}|")
             print(f"|{'¿Está seguro de querer continuar?':^90}|")
             print(f"|{'(S) - Sí':^90}|")
@@ -277,33 +291,95 @@ def punto_equilibrio_multilinea() -> None:
     print(f"|{f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}':^90}|")
     print("-"*92)
 
+    print("\n")
+    print("-"*92)
+    print(f"|{'¿Desea exportar los resultados a EXCEL?':^90}|")
+    print(f"|{'(S) - Sí':^90}|")
+    print(f"|{'(N) - No':^90}|")
+    print("-"*92)
+
+    exportar = pedir_campo("Respuesta: ").capitalize()
+
+    if exportar == "S":
+        with pd.ExcelWriter('punto_equilibrio.xlsx') as writer:
+            df_datos.to_excel(writer, sheet_name='Datos')
+            df_margen_ponderado.T.to_excel(writer, sheet_name='Margen ponderado')
+            df_punto_equilibrio_unidades.T.to_excel(writer, sheet_name='Punto de equilibrio en unidades')
+
     #En esta ocasión lo usamos para que el usuario pueda ver los resultados y escoja si regresar o no al menú.
     pedir_salida()
 
-def utilidad_impuestos_menu() -> None:
-    """Función que muestra un menú para la opción de utilidad de impuestos."""
+######################## UNIDADES ANTES Y DESPUÉS DE IMPUESTOS ########################
+def unidades_impuestos_menu() -> None:
+    """Función que muestra un menú para la opción de unidades de impuestos."""
 
     while True:
         print("-"*92)
-        print(f"|{negrita('Usted escogió: Utilidad antes/después de impuestos'):^98}|")
+        print(f"|{negrita('Usted escogió: Unidades antes/después de impuestos'):^98}|")
         print(f"|{'-'*90}|")
-        print(f"|{'¿Normal o multilínea?':^90}|")
-        print(f"|{'(1) - Normal':^90}|")
-        print(f"|{'(2) - Multilínea':^90}|")
-        print(f"|{'(3) - Regresar al menú principal':^90}|")
+        print(f"|{'(1) - Unidad antes de impuestos normal':^90}|")
+        print(f"|{'(2) - Unidad antes de impuestos multilínea':^90}|")
+        print(f"|{'(3) - Unidad después de impuestos normal':^90}|")
+        print(f"|{'(4) - Unidad después de impuestos multilínea':^90}|")
+        print(f"|{'(5) - Regresar':^90}|")
         print("-"*92)
 
-        opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 3)
+        opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 5)
 
         match opcion:
             case 1:
-                pass
+                unidad_antes_de_impuestos_normal()
             case 2:
                 pass
             case 3:
+                unidad_despues_de_impuestos_normal()
+            case 4:
+                pass
+            case 5:
                 return
 
+def unidad_antes_de_impuestos_normal():
+    """Calcula las unidades a vender antes de impuestos normal."""
 
+    print("\n")
+    costo_fijo_total = pedir_numero("Escriba el costo fijo total: ", 0)
+    print("-"*92)
+    utilidad_deseada = pedir_numero("Escriba la utilidad deseada: ", 0)
+    print("-"*92)
+    margen_contribucion_unitario = pedir_numero("Escriba el margen de contribución unitario: ", 0)
+    print("-"*92)
+    unidades_antes_impuestos = (costo_fijo_total + utilidad_deseada) / margen_contribucion_unitario
+
+    print("\n")
+    print("-"*92)
+    print(f"|{f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}':^90}|")
+    print("-"*92)
+
+def unidad_despues_de_impuestos_normal():
+    """Calcula las unidades a vender después de impuestos normal."""
+
+    print("\n")
+    costo_fijo_total = pedir_numero("Escriba el costo fijo total: ", 0)
+    print("-"*92)
+    utilidad_deseada = pedir_numero("Escriba la utilidad deseada: ", 0)
+    print("-"*92)
+    margen_contribucion_unitario = pedir_numero("Escriba el margen de contribución unitario: ", 0)
+    print("-"*92)
+    tasa_impositiva = pedir_numero("Escriba la tasa impositiva (0 - 100)", 0, 100) / 100
+
+    unidades_despues_impuestos = (
+        (costo_fijo_total + (utilidad_deseada / (1 - tasa_impositiva)))
+        / margen_contribucion_unitario)
+
+    print("\n")
+    print("-"*92)
+    print(f"|{f'Unidades a vender después de impuestos: {unidades_despues_impuestos}':^90}|")
+    print("-"*92)
+
+def unidad_antes_de_impuestos_multilinea():
+    pass
+
+######################## MENÚ PRINCIPAL ########################
 def menu() -> None:
     """Función que le muestra el menú principal al usuario."""
 
@@ -315,7 +391,7 @@ def menu() -> None:
 
             print(f"|{negrita('Escoge la opción: '):^98}|")
             print(f"|{'(1) - Punto de equilibrio en unidades/pesos normal o multilínea':^90}|")
-            print(f"|{'(2) - Utilidad antes/después de impuestos normal o multilínea':^90}|")
+            print(f"|{'(2) - Unidades a vender antes/después de impuestos normal o multilínea':^90}|")
             print(f"|{'(3) - Análisis Costo - Volumen - Utilidad ':^90}|")
             print(f"|{'(4) - Presupuesto de Ventas y Producción':^90}|")
             print(f"|{'(5) - Presupuesto de necesidades de Materias Primas y Compras':^90}|")
@@ -328,7 +404,7 @@ def menu() -> None:
                 case 1:
                     punto_equilibrio_menu()
                 case 2:
-                    utilidad_impuestos_menu()
+                    unidades_impuestos_menu()
                 case 3:
                     pass
                 case 4:
@@ -341,5 +417,6 @@ def menu() -> None:
             continue
 
 
+######################## INICIALIZACIÓN DEL PROGRAMA ########################
 if __name__ == "__main__":
     menu()
