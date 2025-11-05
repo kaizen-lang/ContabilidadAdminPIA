@@ -177,7 +177,7 @@ def punto_equilibrio_normal() -> None:
 
         contenido = [
             f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}',
-            f'El punto de equilibrio en pesos es: {punto_equilibrio_pesos}'
+            f'El punto de equilibrio en pesos es: ${punto_equilibrio_pesos:,.2f}'
         ]
 
         mostrar_cuadro(contenido)
@@ -193,10 +193,11 @@ def punto_equilibrio_multilinea() -> None:
 
     contador_productos = 1
 
-    df_datos = pd.DataFrame() #DataFrame que contendrá los datos del problema
+    datos = {} #Usamos primero un diccionario para recolectar los datos
 
     suma_porcentaje = 0 #Utilizado para verificar que no se pase del 100%
 
+    #Recolección de datos
     while True:
         print("-"*92)
         print(f"|{negrita(f'Producto {contador_productos}'):^98}|")
@@ -228,7 +229,7 @@ def punto_equilibrio_multilinea() -> None:
         costo_variable = pedir_numero('Escriba el costo variable: ', 0)
         margen_contribucion = pedir_numero('Escriba el margen de contribución: ', 0)
 
-        df_datos[nombre_producto] = [porcentaje_margen_contribucion, precio_venta, costo_variable, margen_contribucion]
+        datos[nombre_producto] = [porcentaje_margen_contribucion, precio_venta, costo_variable, margen_contribucion]
 
         contador_productos += 1
 
@@ -243,31 +244,42 @@ def punto_equilibrio_multilinea() -> None:
         if continuar == "N":
             break
 
+    #Conversión a Dataframe
+    df_datos = pd.DataFrame(datos)
     df_datos.index = ['% de Margen de contribución', 'Precio de venta', 'Costo variable', 'Margen de contribución']
 
+    #Pedimos el costo fijo para las operaciones posteriores
     costo_fijo = pedir_numero('Escriba el costo fijo: ', 0)
 
     print("\n")
     print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
 
-    df_margen_ponderado = pd.DataFrame()
+    #Parte donde se calcula el margen de contribución ponderado y unitario
+    margen_ponderado = {}
     margen_contribucion_unitario = 0
 
-    for columna in df_datos:
-        margen_contribucion = df_datos.loc['Margen de contribución', columna]
-        porcentaje_margen_contribucion = df_datos.loc['% de Margen de contribución', columna]
-        margen_contribucion_ponderado = margen_contribucion * (porcentaje_margen_contribucion / 100)
+    for nombre, informacion in datos.items():
+        #Obtenemos los datos necesarios para el cálculo
+        margen_contribucion = informacion[3]
+        porcentaje_margen_contribucion = informacion[0]
 
+        #Cálculos requeridos
+        margen_contribucion_ponderado = margen_contribucion * (porcentaje_margen_contribucion / 100)
         margen_contribucion_unitario += margen_contribucion_ponderado
 
-        df_margen_ponderado[columna] = [margen_contribucion, porcentaje_margen_contribucion, margen_contribucion_ponderado]
+        #Lo añadimos al diccionario
+        margen_ponderado[nombre] = [margen_contribucion, porcentaje_margen_contribucion, margen_contribucion_ponderado]
 
+    #Lo convertimos a DataFrame para su posterior uso
+    df_margen_ponderado = pd.DataFrame(margen_ponderado)
     df_margen_ponderado.index = ['Margen de contribución', 'Porcentaje del margen de contribución', 'Margen de contribución ponderado']
 
     print("\n")
     print(tabulate(df_margen_ponderado, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
+
+    #Parte donde calculamos el punto de equilibrio en unidades y su ponderación
     punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
 
     contenido = [
@@ -277,49 +289,61 @@ def punto_equilibrio_multilinea() -> None:
 
     mostrar_cuadro(contenido)
 
-    df_punto_equilibrio_unidades = pd.DataFrame()
-
-    for columna in df_datos:
-        porcentaje_margen_contribucion = df_datos.loc['% de Margen de contribución', columna]
+    dict_punto_equilibrio_unidades = {}
+    for producto, informacion in datos.items():
+        porcentaje_margen_contribucion = informacion[0]
         punto_equilibrio_por_unidad = punto_equilibrio_unidades * (porcentaje_margen_contribucion / 100)
 
-        df_punto_equilibrio_unidades[columna] = [porcentaje_margen_contribucion, punto_equilibrio_unidades, punto_equilibrio_por_unidad]
+        dict_punto_equilibrio_unidades[producto] = [porcentaje_margen_contribucion,
+                                                    punto_equilibrio_unidades,
+                                                    punto_equilibrio_por_unidad]
 
+    df_punto_equilibrio_unidades = pd.DataFrame(dict_punto_equilibrio_unidades)
     df_punto_equilibrio_unidades.index = ['Porcentaje del margen de contribución', 'Punto de equilibrio en unidades', 'Punto de equilibrio por unidad']
 
     print("\n")
     #Usamos la matriz transpuesta para cambiar las columnas por las filas.
     print(tabulate(df_punto_equilibrio_unidades.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    df_punto_equilibrio_pesos = pd.DataFrame()
+
+    #Parte donde calculamos el punto de equilibrio en pesos
+    dict_punto_equilibrio_pesos = {}
     total_punto_equilibrio_pesos = 0
 
-    for columna in df_punto_equilibrio_unidades:
-        punto_equilibrio_por_unidad = df_punto_equilibrio_unidades.loc['Punto de equilibrio por unidad', columna]
-        precio_venta = df_datos.loc['Precio de venta', columna]
+    for producto, informacion in dict_punto_equilibrio_unidades.items():
+        punto_equilibrio_por_unidad = informacion[2]
+        precio_venta = datos[producto][1]
+
         punto_equilibrio_pesos = punto_equilibrio_por_unidad * precio_venta
         total_punto_equilibrio_pesos += punto_equilibrio_pesos
 
-        df_punto_equilibrio_pesos[columna] = [punto_equilibrio_por_unidad, precio_venta, punto_equilibrio_pesos]
+        dict_punto_equilibrio_pesos[producto] = [punto_equilibrio_por_unidad, precio_venta, punto_equilibrio_pesos]
 
+    df_punto_equilibrio_pesos = pd.DataFrame(dict_punto_equilibrio_pesos)
     df_punto_equilibrio_pesos.index = ['Punto de equilibrio por unidad', 'Precio de venta', 'Punto de equilibrio en pesos']
 
     print("\n")
     print(tabulate(df_punto_equilibrio_pesos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
     print("\n")
 
-    print("-"*92)
-    print(f"|{f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades:,.2f}':^90}|")
-    print(f"|{f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}':^90}|")
-    print("-"*92)
 
-    print("\n")
-    print("-"*92)
-    print(f"|{'¿Desea exportar los resultados a EXCEL?':^90}|")
-    print(f"|{'(S) - Sí':^90}|")
-    print(f"|{'(N) - No':^90}|")
-    print("-"*92)
+    #Impresión de resultados
+    contenido = [
+            f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}',
+            f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}'
+        ]
 
+    mostrar_cuadro(contenido)
+
+
+    #Parte opcional de exportación
+    titulo = '¿Desea exportar los resultados a EXCEL?'
+    contenido = [
+        '(S) - Sí',
+        '(N) - No'
+    ]
+
+    mostrar_cuadro(contenido, titulo)
     exportar = pedir_campo("Respuesta: ").capitalize()
 
     if exportar == "S":
@@ -374,10 +398,9 @@ def unidad_antes_de_impuestos_normal():
     print("-"*92)
     unidades_antes_impuestos = (costo_fijo_total + utilidad_deseada) / margen_contribucion_unitario
 
-    print("\n")
-    print("-"*92)
-    print(f"|{f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}':^90}|")
-    print("-"*92)
+    contenido = f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}'
+
+    mostrar_cuadro(contenido)
 
 def unidad_despues_de_impuestos_normal():
     """Calcula las unidades a vender después de impuestos normal."""
@@ -395,10 +418,9 @@ def unidad_despues_de_impuestos_normal():
         (costo_fijo_total + (utilidad_deseada / (1 - tasa_impositiva)))
         / margen_contribucion_unitario)
 
-    print("\n")
-    print("-"*92)
-    print(f"|{f'Unidades a vender después de impuestos: {unidades_despues_impuestos}':^90}|")
-    print("-"*92)
+    contenido = f'Unidades a vender después de impuestos: {unidades_despues_impuestos}'
+
+    mostrar_cuadro(contenido)
 
 def unidad_antes_de_impuestos_multilinea():
     pass
