@@ -378,11 +378,11 @@ def unidades_impuestos_menu() -> None:
             case 1:
                 unidad_antes_de_impuestos_normal()
             case 2:
-                pass
+                unidad_antes_de_impuestos_multilinea()
             case 3:
                 unidad_despues_de_impuestos_normal()
             case 4:
-                pass
+                unidad_despues_impuestos_multilinea()
             case 5:
                 return
 
@@ -398,9 +398,11 @@ def unidad_antes_de_impuestos_normal():
     print("-"*92)
     unidades_antes_impuestos = (costo_fijo_total + utilidad_deseada) / margen_contribucion_unitario
 
-    contenido = f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}'
+    contenido = [f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}']
 
     mostrar_cuadro(contenido)
+
+    return unidades_antes_impuestos
 
 def unidad_despues_de_impuestos_normal():
     """Calcula las unidades a vender después de impuestos normal."""
@@ -418,12 +420,145 @@ def unidad_despues_de_impuestos_normal():
         (costo_fijo_total + (utilidad_deseada / (1 - tasa_impositiva)))
         / margen_contribucion_unitario)
 
-    contenido = f'Unidades a vender después de impuestos: {unidades_despues_impuestos}'
+    contenido = [f'Unidades a vender después de impuestos: {unidades_despues_impuestos}']
 
     mostrar_cuadro(contenido)
 
+    return unidades_despues_impuestos
+
 def unidad_antes_de_impuestos_multilinea():
-    pass
+
+    contenido = ['PASO 1: Determinación de unidades antes de impuestos normal']
+    mostrar_cuadro(contenido)
+
+    unidad_antes_impuestos = unidad_antes_de_impuestos_normal()
+
+    contenido = ['PASO 2: Ponderación']
+    mostrar_cuadro(contenido)
+
+    contador_productos = 1
+    suma_porcentaje_participacion = 0
+
+    datos = {}
+
+    while True:
+        mostrar_cuadro([f'Producto {contador_productos}'])
+        nombre_producto = pedir_campo('Escriba el nombre del producto: ')
+        porcentaje_participacion = pedir_numero('Escriba el porcentaje de participación (0 - 100): ', 0, 100)
+
+        suma_porcentaje_participacion += porcentaje_participacion
+        if suma_porcentaje_participacion > 100:
+            título = 'ADVERTENCIA'
+            subtítulo = 'La suma de porcentaje de participación excede del 100%'
+            contenido = ['¿Quiere continuar?',
+                         '(S) - Sí',
+                         '(N) - No']
+            mostrar_cuadro(contenido, título, subtítulo)
+
+            continuar = pedir_campo(f"{negrita('Escriba su respuesta: ')}").capitalize()
+
+            if continuar == 'N':
+                break
+
+        unidad_antes_impuestos_ponderada = unidad_antes_impuestos * (porcentaje_participacion / 100)
+        datos[nombre_producto] = [porcentaje_participacion, unidad_antes_impuestos, unidad_antes_impuestos_ponderada]
+
+        contador_productos += 1
+
+        contenido = ['¿Quiere añadir otro producto?',
+                     '(S) - Sí',
+                     '(N) - No']
+        mostrar_cuadro(contenido)
+
+        continuar = pedir_campo(f"{negrita('Escriba su respuesta: ')}").capitalize()
+
+        if continuar == 'N':
+            break
+
+    df_datos = pd.DataFrame(datos)
+    df_datos.index = ['% Participación', 'Total Uds', 'Uds. antes de impuestos']
+
+    print(tabulate(df_datos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    #Parte opcional de exportación
+    titulo = '¿Desea exportar los resultados a EXCEL?'
+    contenido = [
+        '(S) - Sí',
+        '(N) - No'
+    ]
+
+    mostrar_cuadro(contenido, titulo)
+    exportar = pedir_campo("Respuesta: ").capitalize()
+
+    if exportar == "S":
+        df_datos.to_excel('unidades_antes_de_impuestos.xlsx')
+
+def unidad_despues_impuestos_multilinea():
+    contenido = ['PASO 1: Determinación de unidades después de impuestos normal']
+    mostrar_cuadro(contenido)
+
+    unidad_despues_impuestos = unidad_despues_de_impuestos_normal()
+
+    contenido = ['PASO 2: Ponderación']
+    mostrar_cuadro(contenido)
+
+    contador_productos = 1
+    suma_porcentaje_participacion = 0
+
+    datos = {}
+
+    while True:
+        mostrar_cuadro([f'Producto {contador_productos}'])
+        nombre_producto = pedir_campo('Escriba el nombre del producto: ')
+        porcentaje_participacion = pedir_numero('Escriba el porcentaje de participación (0 - 100): ', 0, 100)
+
+        suma_porcentaje_participacion += porcentaje_participacion
+        if suma_porcentaje_participacion > 100:
+            título = 'ADVERTENCIA'
+            subtítulo = 'La suma de porcentaje de participación excede del 100%'
+            contenido = ['¿Quiere continuar?',
+                         '(S) - Sí',
+                         '(N) - No']
+            mostrar_cuadro(contenido, título, subtítulo)
+
+            continuar = pedir_campo(f"{negrita('Escriba su respuesta: ')}").capitalize()
+
+            if continuar == 'S':
+                break
+
+        unidad_despues_impuestos_ponderada = unidad_despues_impuestos * (porcentaje_participacion / 100)
+        datos[nombre_producto] = [porcentaje_participacion, unidad_despues_impuestos, unidad_despues_impuestos_ponderada]
+
+        contador_productos += 1
+
+        contenido = ['¿Quiere añadir otro producto?',
+                     '(S) - Sí',
+                     '(N) - No']
+        mostrar_cuadro(contenido)
+
+        continuar = pedir_campo(f"{negrita('Escriba su respuesta: ')}").capitalize()
+
+        if continuar == 'N':
+            break
+
+    df_datos = pd.DataFrame(datos)
+    df_datos.index = ['% Participación', 'Total Uds', 'Uds. después de impuestos']
+
+    print(tabulate(df_datos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    #Parte opcional de exportación
+    titulo = '¿Desea exportar los resultados a EXCEL?'
+    contenido = [
+        '(S) - Sí',
+        '(N) - No'
+    ]
+
+    mostrar_cuadro(contenido, titulo)
+    exportar = pedir_campo("Respuesta: ").capitalize()
+
+    if exportar == "S":
+        df_datos.to_excel('unidades_despues_de_impuestos.xlsx')
+        print('Exportación hecha de manera exitosa.')
 
 ######################## MENÚ PRINCIPAL ########################
 def menu() -> None:
