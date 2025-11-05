@@ -34,13 +34,14 @@ def pedir_salida() -> None | Exception:
         None | Exception: Lanza la excepción sólo si el usuario acepta salir.
     """
 
-    print("\n")
-    print("-"*92)
-    print(f"|{'¿Desea regresar al menú principal?':^90}|")
-    print(f"|{'-'*90}|")
-    print(f"|{'(S) - Sí':^90}|")
-    print(f"|{'(N) - No':^90}|")
-    print("-"*92)
+    titulo = '¿Desea regresar al menú principal?'
+    contenido = [
+        '(S) - Sí',
+        '(N) - No'
+    ]
+
+    mostrar_cuadro(contenido, titulo)
+
     print(f"{negrita('Respuesta: ')}", end="")
 
     salida = input().capitalize()
@@ -116,20 +117,37 @@ def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
             pedir_salida()
             continue
 
+def mostrar_cuadro(contenido: list, titulo:str = None, subtitulo:str = None):
+    print("\n")
+    print("-"*92)
+
+    if titulo:
+        print(f"|{negrita(titulo):^98}|")
+        print(f"|{'-'*90}|")
+    if subtitulo:
+        print(f"|{negrita(subtitulo):^98}|")
+        print(f"|{" ":^90}|")
+    for linea in contenido:
+        print(f"|{linea:^90}|")
+
+    print(f"|{" ":^90}|")
+    print("-"*92)
+
 ######################## PUNTO DE EQUILIBRIO ########################
 def punto_equilibrio_menu() -> None:
     """Menú que muestra las opciones para el punto de equilibrio."""
 
+    titulo = 'Usted escogió: Punto de equilibrio'
+    subtitulo = 'Escoja el tipo de cálculo que le gustaría realizar'
+    opciones = [
+        '(1) - Normal',
+        '(2) - Multilínea',
+        '(3) - Regresar al menú principal'
+    ]
+
     while True:
 
-        print("-"*92)
-        print(f"|{negrita('Usted escogió: Punto de equilibrio'):^98}|")
-        print(f"|{'-'*90}|")
-        print(f"|{"¿Normal o multilínea?":^90}|")
-        print(f"|{"(1) - Normal":^90}|")
-        print(f"|{"(2) - Multilínea":^90}|")
-        print(f"|{"(3) - Regresar al menú principal":^90}|")
-        print("-"*92)
+        mostrar_cuadro(opciones, titulo, subtitulo)
 
         opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 3)
 
@@ -157,12 +175,12 @@ def punto_equilibrio_normal() -> None:
         punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
         punto_equilibrio_pesos = punto_equilibrio_unidades * precio_venta
 
-        print("\n")
-        print("-"*92)
-        print(f"|{f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}':^90}|")
-        print(f"|{f'El punto de equilibrio en pesos es: {punto_equilibrio_pesos}':^90}|")
-        print("-"*92)
-        print("\n")
+        contenido = [
+            f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}',
+            f'El punto de equilibrio en pesos es: {punto_equilibrio_pesos}'
+        ]
+
+        mostrar_cuadro(contenido)
 
     except ZeroDivisionError:
         print(f"{negrita('Error')}: división por cero.")
@@ -189,14 +207,17 @@ def punto_equilibrio_multilinea() -> None:
         suma_porcentaje += porcentaje_margen_contribucion
 
         if suma_porcentaje > 100:
-            print("-"*92)
-            print(f"|{negrita('ADVERTENCIA'):^98}|")
-            print(f"|{'La suma de porcentajes proporcionada hasta ahora supera el 100%':^90}|")
-            print(f"|{'¿Está seguro de querer continuar?':^90}|")
-            print(f"|{'(S) - Sí':^90}|")
-            print(f"|{'(N) - No':^90}|")
-            print("-"*92)
+            titulo = 'ADVERTENCIA'
+            subtitulo = 'La suma de porcentajes proporcionada hasta ahora supera el 100%'
+            contenido = [
+                '¿Está seguro de querer continuar?',
+                '(S) - Sí',
+                '(N) - No'
+            ]
 
+            mostrar_cuadro(contenido, titulo, subtitulo)
+
+            print("\n")
             confirmar = pedir_campo("Respuesta: ").capitalize()
 
             if confirmar == "N":
@@ -211,11 +232,11 @@ def punto_equilibrio_multilinea() -> None:
 
         contador_productos += 1
 
-        print("-"*92)
-        print(f"|{'¿Quiere añadir otro producto?':^90}|")
-        print(f"|{'(S) - Sí':^90}|")
-        print(f"|{'(N) - No':^90}|")
-        print("-"*92)
+        contenido = [
+            '¿Quiere añadir otro producto?',
+            '(S) - Sí',
+            '(N) - No'
+        ]
 
         continuar = pedir_campo("Respuesta: ").capitalize()
 
@@ -249,11 +270,12 @@ def punto_equilibrio_multilinea() -> None:
 
     punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
 
-    print("\n")
-    print('-'*92)
-    print(f"|{f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades:,.2f}':^90}|")
-    print(f"|{'A continuación se mostrará la ponderación':^90}|")
-    print('-'*92)
+    contenido = [
+        f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades:,.2f}',
+        'A continuación se mostrará la ponderación'
+    ]
+
+    mostrar_cuadro(contenido)
 
     df_punto_equilibrio_unidades = pd.DataFrame()
 
@@ -313,16 +335,18 @@ def punto_equilibrio_multilinea() -> None:
 def unidades_impuestos_menu() -> None:
     """Función que muestra un menú para la opción de unidades de impuestos."""
 
+    título = "Unidades antes/después de impuestos"
+    subtítulo = "Escoja el tipo de cálculo que le gustaría realizar"
+    opciones = [
+        '(1) - Unidad antes de impuestos normal',
+        '(2) - Unidad antes de impuestos multilínea',
+        '(3) - Unidad después de impuestos normal',
+        '(4) - Unidad después de impuestos multilínea',
+        '(5) - Regresar'
+    ]
+
     while True:
-        print("-"*92)
-        print(f"|{negrita('Usted escogió: Unidades antes/después de impuestos'):^98}|")
-        print(f"|{'-'*90}|")
-        print(f"|{'(1) - Unidad antes de impuestos normal':^90}|")
-        print(f"|{'(2) - Unidad antes de impuestos multilínea':^90}|")
-        print(f"|{'(3) - Unidad después de impuestos normal':^90}|")
-        print(f"|{'(4) - Unidad después de impuestos multilínea':^90}|")
-        print(f"|{'(5) - Regresar':^90}|")
-        print("-"*92)
+        mostrar_cuadro(opciones, título, subtítulo)
 
         opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 5)
 
@@ -383,21 +407,20 @@ def unidad_antes_de_impuestos_multilinea():
 def menu() -> None:
     """Función que le muestra el menú principal al usuario."""
 
+    titulo = "Bienvenido al programa contable"
+    subtitulo = "Escoge la opción"
+    opciones = [
+        '(1) - Punto de equilibrio en unidades/pesos normal o multilínea',
+        '(2) - Unidades a vender antes/después de impuestos normal o multilínea',
+        '(3) - Análisis Costo-Volumen-Utilidad',
+        '(4) - Presupuesto de Ventas y Producción',
+        '(5) - Presupuesto de necesidades de Materias Primas y Compras',
+        '(6) - Salir del programa'
+    ]
+
     while True:
         try:
-            print("-"*92)
-            print(f"|{negrita('Bienvenido al programa contable'):^98}|")
-            print(f"|{'-'*90}|")
-
-            print(f"|{negrita('Escoge la opción: '):^98}|")
-            print(f"|{'(1) - Punto de equilibrio en unidades/pesos normal o multilínea':^90}|")
-            print(f"|{'(2) - Unidades a vender antes/después de impuestos normal o multilínea':^90}|")
-            print(f"|{'(3) - Análisis Costo - Volumen - Utilidad ':^90}|")
-            print(f"|{'(4) - Presupuesto de Ventas y Producción':^90}|")
-            print(f"|{'(5) - Presupuesto de necesidades de Materias Primas y Compras':^90}|")
-            print(f"|{'(6) - Salir del programa':^90}|")
-            print("-"*92)
-
+            mostrar_cuadro(opciones, titulo, subtitulo)
             opcion = pedir_numero(f"{negrita('Escribe el número de la opción que vas a escoger: ')}", 1, 6)
 
             match opcion:
