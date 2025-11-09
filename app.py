@@ -560,6 +560,137 @@ def unidad_despues_impuestos_multilinea():
         df_datos.to_excel('unidades_despues_de_impuestos.xlsx')
         print('Exportación hecha de manera exitosa.')
 
+def analisis_cvu_menu():
+
+    titulo = 'Análisis Costo - Volumen - Utilidad'
+    subtitulo = '¿Qué quiere hacer?'
+    contenido = ['(1) - Iniciar Análisis Costo - Volumen - Utilidad',
+                 '(2) - Regresar al menú principal']
+
+    mostrar_cuadro(contenido, titulo, subtitulo)
+
+    while True:
+        opcion = pedir_numero(f'{negrita("Escriba el número de la opción que vas a escoger: ")}', 1, 2)
+
+        match opcion:
+            case 1:
+                analisis_cvu()
+            case 2:
+                return
+
+def analisis_cvu():
+
+    print("\n")
+    mostrar_cuadro(['Bienvenido al análisis Costo - Volumen - Utilidad'])
+
+    propuestas = {
+        "actual":
+        {
+            "Precio de venta": 0,
+            "Costos Variables": 0,
+            "Costos Fijos": 0,
+            "Ventas": 0
+        }
+    }
+
+    for dato in propuestas["actual"].keys():
+        titulo = f'{dato}'
+        contenido = [f'Escriba el valor de {dato}']
+        mostrar_cuadro(contenido, titulo)
+
+        valor = pedir_numero("Valor: ", 0)
+        propuestas["actual"][dato] = valor
+
+
+    propuestas_calculos = {
+        "actual":
+        {
+            "Ingreso": propuestas["actual"]["Ventas"] * propuestas["actual"]["Precio de venta"],
+            "Costo Variable": propuestas["actual"]["Costos Variables"],
+        }
+    }
+
+    propuestas_calculos["actual"]["Margen de Contribución"] = propuestas_calculos["actual"]["Ingreso"] - propuestas['actual']['Costos Variables']
+    propuestas_calculos["actual"]["Costo Fijo"] = propuestas["actual"]["Costos Fijos"]
+    propuestas_calculos["actual"]["Utilidad de Operación"] = propuestas_calculos["actual"]["Margen de Contribución"] - propuestas["actual"]["Costos Fijos"]
+
+    print("\n")
+
+    num_propuestas = pedir_numero(f"{negrita('Escriba la cantidad de propuestas a realizar: ')}")
+
+    for propuesta in range(1, (num_propuestas + 1)): #Le añadimos uno porque el range no toma en cuenta el último valor
+
+        propuestas[propuesta] = {}
+
+        mostrar_cuadro([f'Propuesta {propuesta}'])
+
+
+        for dato in propuestas["actual"].keys():
+            dato_original = propuestas["actual"][dato]
+
+            titulo = f"¿Qué quieres hacer con {dato}?"
+            contenido = [
+                '(1) - Aumentar valor (%)',
+                '(2) - Aumentar valor (cantidad)',
+                '(3) - Disminuir valor (%)',
+                '(4) - Disminuir valor (cantidad)',
+                '(5) - Mantener valor'
+            ]
+
+            mostrar_cuadro(contenido, titulo)
+
+            opcion = pedir_numero(f"{negrita('Escriba el número de la opción que vas a escoger: ')}", 1, 5)
+
+            match opcion:
+                case 1:
+                    mostrar_cuadro(['Usted escogió aumentar el valor del dato en porcentaje'])
+                    cantidad_aumento = pedir_numero('Escriba el porcentaje que desea aumentar: ', 0, 100)
+                    propuestas[propuesta][dato] = dato_original * (1 + (cantidad_aumento / 100))
+                case 2:
+                    mostrar_cuadro(['Usted escogió aumentar el valor del dato en cantidad ($)'])
+                    cantidad_aumento = pedir_numero('Escriba la cantidad que desea aumentar: ', 0)
+                    propuestas[propuesta][dato] = dato_original + cantidad_aumento
+                case 3:
+                    mostrar_cuadro(['Usted escogió disminuir el valor del dato en porcentaje'])
+                    cantidad_aumento = pedir_numero('Escriba el porcentaje que desea disminuir: ', 0, 100)
+                    propuestas[propuesta][dato] = dato_original - (dato_original * (cantidad_aumento / 100))
+                case 4:
+                    mostrar_cuadro(['Usted escogió disminuir el valor del dato en cantidad ($)'])
+                    cantidad_aumento = pedir_numero('Escriba la cantidad que desea disminuir: ', 0)
+                    propuestas[propuesta][dato] = dato_original - cantidad_aumento
+                case 5:
+                    propuestas[propuesta][dato] = dato_original
+
+        propuestas_calculos[propuesta] = {
+                "Ingreso": propuestas[propuesta]["Ventas"] * propuestas[propuesta]["Precio de venta"],
+                "Costo Variable": propuestas[propuesta]["Costos Variables"],
+        }
+
+        propuestas_calculos[propuesta]["Margen de Contribución"] = propuestas_calculos[propuesta]["Ingreso"] - propuestas[propuesta]["Costos Variables"]
+        propuestas_calculos[propuesta]["Costo Fijo"] = propuestas[propuesta]["Costos Fijos"]
+        propuestas_calculos[propuesta]["Utilidad de Operación"] = propuestas_calculos[propuesta]["Margen de Contribución"] - propuestas[propuesta]["Costos Fijos"]
+
+        df_propuestas_calculos = pd.DataFrame(propuestas_calculos)
+        df_propuestas = pd.DataFrame(propuestas)
+
+        print(tabulate(df_propuestas_calculos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+        print(tabulate(df_propuestas, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+        #Parte opcional de exportación
+        titulo = '¿Desea exportar los resultados a EXCEL?'
+        contenido = [
+            '(S) - Sí',
+            '(N) - No'
+        ]
+
+        mostrar_cuadro(contenido, titulo)
+        exportar = pedir_campo("Respuesta: ").capitalize()
+
+        if exportar == "S":
+            with pd.ExcelWriter('analisis_cvu.xlsx') as writer:
+                df_propuestas_calculos.to_excel(writer, sheet_name='Análisis CVU Parte 1')
+                df_propuestas.to_excel(writer, sheet_name='Análisis CVU Parte 2')
+
 ######################## MENÚ PRINCIPAL ########################
 def menu() -> None:
     """Función que le muestra el menú principal al usuario."""
@@ -586,7 +717,7 @@ def menu() -> None:
                 case 2:
                     unidades_impuestos_menu()
                 case 3:
-                    pass
+                    analisis_cvu_menu()
                 case 4:
                     pass
                 case 5:
