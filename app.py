@@ -1,3 +1,6 @@
+#TODO: Presupuesto de ventas y producción
+#TODO: Presupuesto de necesidades de materias primas y compras
+
 ######################## IMPORT Y OPCIONES GLOBALES ########################
 import pandas as pd
 from tabulate import tabulate
@@ -5,12 +8,36 @@ from tabulate import tabulate
 #Cambiamos el formato de los tipos de dato float
 pd.set_option('display.float_format', lambda x: '%.9f' % x)
 
-
 ######################## UTILIDADES ########################
 class Salir(Exception):
     """Excepción usada para regresar al menú principal."""
     pass
 
+def exportar_excel(*dataframes: pd.DataFrame, nombre_archivo: str = "resultado") -> None:
+    dataframes = [dataframe for dataframe in dataframes]
+
+    if len(dataframes) == 1:
+        dataframes[0].to_excel(f'{nombre_archivo}.xlsx', sheet_name="Hoja 1")
+    else:
+        with pd.ExcelWriter(f'{nombre_archivo}.xlsx') as writer:
+            for hoja, dataframe in enumerate(dataframes):
+                dataframe.to_excel(writer, sheet_name=f'Hoja {hoja + 1}')
+
+def preguntar_exportación() -> bool:
+    titulo = '¿Desea exportar los resultados a EXCEL?'
+    contenido = [
+        '(S) - Sí',
+        '(N) - No'
+    ]
+
+    mostrar_cuadro(contenido, titulo)
+
+    exportar = pedir_campo("Respuesta: ").capitalize()
+
+    if exportar == "S":
+        return True
+    else:
+        return False
 
 def negrita(texto: str) -> str:
     """Retorna un F-string con un formato de negritas.
@@ -335,22 +362,8 @@ def punto_equilibrio_multilinea() -> None:
 
     mostrar_cuadro(contenido)
 
-
-    #Parte opcional de exportación
-    titulo = '¿Desea exportar los resultados a EXCEL?'
-    contenido = [
-        '(S) - Sí',
-        '(N) - No'
-    ]
-
-    mostrar_cuadro(contenido, titulo)
-    exportar = pedir_campo("Respuesta: ").capitalize()
-
-    if exportar == "S":
-        with pd.ExcelWriter('punto_equilibrio.xlsx') as writer:
-            df_datos.to_excel(writer, sheet_name='Datos')
-            df_margen_ponderado.T.to_excel(writer, sheet_name='Margen ponderado')
-            df_punto_equilibrio_unidades.T.to_excel(writer, sheet_name='Punto de equilibrio en unidades')
+    if preguntar_exportación():
+        exportar_excel(df_datos, df_margen_ponderado, df_punto_equilibrio_unidades, df_punto_equilibrio_pesos, nombre_archivo="punto_equilibrio")
 
     #En esta ocasión lo usamos para que el usuario pueda ver los resultados y escoja si regresar o no al menú.
     pedir_salida()
@@ -480,18 +493,9 @@ def unidad_antes_de_impuestos_multilinea():
 
     print(tabulate(df_datos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    #Parte opcional de exportación
-    titulo = '¿Desea exportar los resultados a EXCEL?'
-    contenido = [
-        '(S) - Sí',
-        '(N) - No'
-    ]
+    if preguntar_exportación():
+        exportar_excel(df_datos, nombre_archivo="unidades_antes_de_impuestos")
 
-    mostrar_cuadro(contenido, titulo)
-    exportar = pedir_campo("Respuesta: ").capitalize()
-
-    if exportar == "S":
-        df_datos.to_excel('unidades_antes_de_impuestos.xlsx')
 
 def unidad_despues_impuestos_multilinea():
     contenido = ['PASO 1: Determinación de unidades después de impuestos normal']
@@ -546,19 +550,8 @@ def unidad_despues_impuestos_multilinea():
 
     print(tabulate(df_datos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    #Parte opcional de exportación
-    titulo = '¿Desea exportar los resultados a EXCEL?'
-    contenido = [
-        '(S) - Sí',
-        '(N) - No'
-    ]
-
-    mostrar_cuadro(contenido, titulo)
-    exportar = pedir_campo("Respuesta: ").capitalize()
-
-    if exportar == "S":
-        df_datos.to_excel('unidades_despues_de_impuestos.xlsx')
-        print('Exportación hecha de manera exitosa.')
+    if preguntar_exportación():
+        exportar_excel(df_datos, nombre_archivo="unidades_despues_de_impuestos")
 
 def analisis_cvu_menu():
 
@@ -567,9 +560,8 @@ def analisis_cvu_menu():
     contenido = ['(1) - Iniciar Análisis Costo - Volumen - Utilidad',
                  '(2) - Regresar al menú principal']
 
-    mostrar_cuadro(contenido, titulo, subtitulo)
-
     while True:
+        mostrar_cuadro(contenido, titulo, subtitulo)
         opcion = pedir_numero(f'{negrita("Escriba el número de la opción que vas a escoger: ")}', 1, 2)
 
         match opcion:
@@ -676,20 +668,103 @@ def analisis_cvu():
         print(tabulate(df_propuestas_calculos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
         print(tabulate(df_propuestas, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-        #Parte opcional de exportación
-        titulo = '¿Desea exportar los resultados a EXCEL?'
-        contenido = [
-            '(S) - Sí',
-            '(N) - No'
-        ]
+        if preguntar_exportación():
+            exportar_excel(df_propuestas, df_propuestas_calculos, nombre_archivo="analisis_cvu")
 
-        mostrar_cuadro(contenido, titulo)
-        exportar = pedir_campo("Respuesta: ").capitalize()
+        break
 
-        if exportar == "S":
-            with pd.ExcelWriter('analisis_cvu.xlsx') as writer:
-                df_propuestas_calculos.to_excel(writer, sheet_name='Análisis CVU Parte 1')
-                df_propuestas.to_excel(writer, sheet_name='Análisis CVU Parte 2')
+def presupuesto_ventas_menu():
+    titulo = "Presupuesto de ventas y producción"
+    subtitulo = "Escoja el tipo de cálculo que le gustaría realizar"
+    contenido = ['(1) - Presupuesto de ventas',
+        '(2) - Presupuesto de producción',
+        '(3) - Regresar al menú principal']
+
+    while True:
+        mostrar_cuadro(contenido, titulo, subtitulo)
+        opcion = pedir_numero('Escriba el número de la opción: ', 1, 3)
+
+        match opcion:
+            case 1:
+                presupuesto_ventas()
+            case 2:
+                presupuesto_producción()
+            case 3:
+                return
+
+
+def presupuesto_ventas(exportar: bool = False):
+    mostrar_cuadro(['Escriba la cantidad de productos que tiene'])
+    num_productos = pedir_numero('Cantidad de productos: ', 0)
+    datos = {}
+
+    for producto in range(0, num_productos):
+        mostrar_cuadro([f'Producto {producto + 1}'])
+        nombre = pedir_campo('Escriba el nombre del producto: ')
+        pronostico_ventas = pedir_numero('Pronóstico de ventas: ', 0)
+        precio_unitario = pedir_numero('Precio unitario (escriba 1 si no aplica): ', 1)
+        ventas_presupuestadas = pronostico_ventas * precio_unitario
+
+        datos[nombre] = {
+            "Pronóstico de ventas": pronostico_ventas,
+            "Precio unitario": precio_unitario,
+            "Ventas presupuestadas": ventas_presupuestadas
+        }
+
+    df_datos = pd.DataFrame(datos)
+    df_datos.index = ['Pronóstico de ventas', 'Precio unitario', 'Ventas presupuestadas']
+    print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    if preguntar_exportación():
+        exportar_excel(df_datos, nombre_archivo="presupuesto_ventas")
+
+    if exportar:
+        return datos
+
+def presupuesto_producción():
+    mostrar_cuadro(['Primero necesita obtener la cantidad de ventas'])
+    datos_ventas = presupuesto_ventas(exportar = True)
+    datos_produccion = {}
+
+    for producto, informacion in datos_ventas.items():
+        mostrar_cuadro([f'Producto {producto}'])
+        ventas = informacion['Ventas presupuestadas']
+        inventario_final = pedir_numero('Escriba el inventario final deseado de producto terminado: ', 0)
+        inventario_inicial = pedir_numero('Escriba el inventario inicial de producto terminado: ', 0)
+        produccion_requerida = (ventas + inventario_final) - inventario_inicial
+
+        datos_produccion[producto] = {
+            "Pronóstico de ventas": ventas,
+            "Inventario final": inventario_final,
+            "Inventario inicial": inventario_inicial,
+            "Producción requerida": produccion_requerida
+        }
+
+    total_pronóstico_ventas = 0
+    total_inventario_inicial = 0
+    total_inventario_final = 0
+    total_produccion_requerida = 0
+
+    for producto, informacion in datos_produccion.items():
+        total_pronóstico_ventas += informacion["Pronóstico de ventas"]
+        total_inventario_final += informacion["Inventario final"]
+        total_inventario_inicial += informacion["Inventario inicial"]
+        total_produccion_requerida += informacion["Producción requerida"]
+
+
+    datos_produccion["Total"] = {
+        "Pronóstico de ventas": total_pronóstico_ventas,
+        "Inventario final": total_inventario_final,
+        "Inventario inicial": total_inventario_inicial,
+        "Producción requerida": total_produccion_requerida
+    }
+
+    df_datos_producción = pd.DataFrame(datos_produccion)
+    df_datos_producción.index = ['Pronóstico de ventas', 'Inventario final', 'Inventario inicial', 'Producción requerida']
+    print(tabulate(df_datos_producción, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    if preguntar_exportación():
+        exportar_excel(df_datos_producción, nombre_archivo="presupuesto_producción")
 
 ######################## MENÚ PRINCIPAL ########################
 def menu() -> None:
@@ -719,7 +794,7 @@ def menu() -> None:
                 case 3:
                     analisis_cvu_menu()
                 case 4:
-                    pass
+                    presupuesto_ventas_menu()
                 case 5:
                     pass
                 case 6:
