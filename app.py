@@ -1,6 +1,3 @@
-#TODO: Presupuesto de ventas y producción
-#TODO: Presupuesto de necesidades de materias primas y compras
-
 ######################## IMPORT Y OPCIONES GLOBALES ########################
 import pandas as pd
 from tabulate import tabulate
@@ -14,16 +11,32 @@ class Salir(Exception):
     pass
 
 def exportar_excel(*dataframes: pd.DataFrame, nombre_archivo: str = "resultado") -> None:
+    """Exporta uno o más dataframes a excel.
+
+    Args:
+        *dataframes (Dataframe): Dataframes a exportar. Puede ser uno o muchos.
+        nombre_archivo (str, optional): Nombre del archivo que se guardará. Defaults to "resultado".
+    """
+
     dataframes = [dataframe for dataframe in dataframes]
 
-    if len(dataframes) == 1:
-        dataframes[0].to_excel(f'{nombre_archivo}.xlsx', sheet_name="Hoja 1")
-    else:
-        with pd.ExcelWriter(f'{nombre_archivo}.xlsx') as writer:
-            for hoja, dataframe in enumerate(dataframes):
-                dataframe.to_excel(writer, sheet_name=f'Hoja {hoja + 1}')
+    try:
+        if len(dataframes) == 1:
+            dataframes[0].to_excel(f'{nombre_archivo}.xlsx', sheet_name="Hoja 1")
+        else:
+            with pd.ExcelWriter(f'{nombre_archivo}.xlsx') as writer:
+                for hoja, dataframe in enumerate(dataframes):
+                    dataframe.to_excel(writer, sheet_name=f'Hoja {hoja + 1}')
+    except PermissionError:
+        print("Error: El archivo ya está abierto. Ciérrelo y vuelva a intentarlo.")
 
 def preguntar_exportación() -> bool:
+    """Pregunta al usuario si quiere exportar los datos a excel.
+
+    Returns:
+        bool: True si es afirmativo, False si es negativo.
+    """
+
     titulo = '¿Desea exportar los resultados a EXCEL?'
     contenido = [
         '(S) - Sí',
@@ -48,6 +61,9 @@ def negrita(texto: str) -> str:
     Returns:
         str: F-string con el estilo aplicado.
     """
+
+    # \033[1m - Inicio de negritas
+    # \033[0m - Fin de negritas
 
     return f'\033[1m{texto}\033[0m'
 
@@ -145,6 +161,14 @@ def pedir_numero(mensaje: str, min: int = None, max: int = None) -> int:
             continue
 
 def mostrar_cuadro(contenido: list, titulo:str = None, subtitulo:str = None):
+    """Muestra un cuadro que contiene el texto que se le pase como parámetro.
+
+    Args:
+        contenido (list): Lista de strings. Cada elemento representa una línea.
+        titulo (str, optional): Título del cuadro. Defaults to None.
+        subtitulo (str, optional): Subtítulo del cuadro. Defaults to None.
+    """
+
     print("\n")
     print("-"*92)
 
@@ -157,7 +181,6 @@ def mostrar_cuadro(contenido: list, titulo:str = None, subtitulo:str = None):
     for linea in contenido:
         print(f"|{linea:^90}|")
 
-    print(f"|{" ":^90}|")
     print("-"*92)
 
 ######################## PUNTO DE EQUILIBRIO ########################
@@ -190,13 +213,14 @@ def punto_equilibrio_normal() -> None:
     """Función que muestra una interfaz para determinar el punto de equilibrio normal."""
 
     try:
-        print("-"*92)
-        precio_venta = pedir_numero("1. Ingrese el precio de venta: ", 0)
-        print("-"*92)
-        costo_variable = pedir_numero("2. Ingrese el costo variable: ", 0)
-        print("-"*92)
-        costo_fijo = pedir_numero("3. Ingrese el costo fijo: ", 0)
-        print("-"*92)
+        mostrar_cuadro(["1. Ingrese el precio de venta"])
+        precio_venta = pedir_numero("Valor del precio de venta: ", 0)
+
+        mostrar_cuadro(["2. Ingrese el costo variable"])
+        costo_variable = pedir_numero("Valor del costo variable: ", 0)
+
+        mostrar_cuadro(["3. Ingrese el costo fijo"])
+        costo_fijo = pedir_numero("Valor del costo fijo: ", 0)
 
         margen_contribucion_unitario = precio_venta - costo_variable
         punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
@@ -207,7 +231,7 @@ def punto_equilibrio_normal() -> None:
             f'El punto de equilibrio en pesos es: ${punto_equilibrio_pesos:,.2f}'
         ]
 
-        mostrar_cuadro(contenido)
+        mostrar_cuadro(contenido, titulo='Resultado')
 
     except ZeroDivisionError:
         print(f"{negrita('Error')}: división por cero.")
@@ -360,7 +384,7 @@ def punto_equilibrio_multilinea() -> None:
             f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}'
         ]
 
-    mostrar_cuadro(contenido)
+    mostrar_cuadro(contenido, titulo='Resultado')
 
     if preguntar_exportación():
         exportar_excel(df_datos, df_margen_ponderado, df_punto_equilibrio_unidades, df_punto_equilibrio_pesos, nombre_archivo="punto_equilibrio")
@@ -399,35 +423,57 @@ def unidades_impuestos_menu() -> None:
             case 5:
                 return
 
-def unidad_antes_de_impuestos_normal():
-    """Calcula las unidades a vender antes de impuestos normal."""
+def unidad_antes_de_impuestos_normal(exportar: bool = False) -> None | float:
+    """Calcula las unidades a vender antes de impuestos normal.
+
+        Args:
+            exportar (bool, optional): True si se quiere exportar el diccionario que contiene los datos del presupuesto. Defaults to False.
+        Returns:
+            None: Si no se especifica que se va a exportar.
+            float: Unidades a vender antes de impuestos.
+    """
 
     print("\n")
-    costo_fijo_total = pedir_numero("Escriba el costo fijo total: ", 0)
-    print("-"*92)
-    utilidad_deseada = pedir_numero("Escriba la utilidad deseada: ", 0)
-    print("-"*92)
-    margen_contribucion_unitario = pedir_numero("Escriba el margen de contribución unitario: ", 0)
-    print("-"*92)
+
+    mostrar_cuadro(["Escriba el costo fijo total"])
+    costo_fijo_total = pedir_numero("Valor del costo fijo total: ", 0)
+
+    mostrar_cuadro(["Escriba la utilidad deseada"])
+    utilidad_deseada = pedir_numero("Valor de la utilidad deseada: ", 0)
+
+    mostrar_cuadro(["Escriba el margen de contribución unitario"])
+    margen_contribucion_unitario = pedir_numero("Valor del margen de contribución unitario: ", 0)
+
     unidades_antes_impuestos = (costo_fijo_total + utilidad_deseada) / margen_contribucion_unitario
 
     contenido = [f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}']
 
-    mostrar_cuadro(contenido)
+    mostrar_cuadro(contenido, titulo='Resultado')
 
-    return unidades_antes_impuestos
+    if exportar:
+        return unidades_antes_impuestos
 
-def unidad_despues_de_impuestos_normal():
-    """Calcula las unidades a vender después de impuestos normal."""
+def unidad_despues_de_impuestos_normal(exportar: bool = False) -> None | float:
+    """Calcula las unidades a vender después de impuestos normal.
 
-    print("\n")
-    costo_fijo_total = pedir_numero("Escriba el costo fijo total: ", 0)
-    print("-"*92)
-    utilidad_deseada = pedir_numero("Escriba la utilidad deseada: ", 0)
-    print("-"*92)
-    margen_contribucion_unitario = pedir_numero("Escriba el margen de contribución unitario: ", 0)
-    print("-"*92)
-    tasa_impositiva = pedir_numero("Escriba la tasa impositiva (0 - 100)", 0, 100) / 100
+        Args:
+            exportar (bool, optional): True si se quiere exportar el diccionario que contiene los datos del presupuesto. Defaults to False.
+        Returns:
+            None: Si no se especifica que se va a exportar.
+            float: Unidades a vender después de impuestos.
+    """
+
+    mostrar_cuadro(["Escriba el costo fijo total"])
+    costo_fijo_total = pedir_numero("Valor del costo fijo total: ", 0)
+
+    mostrar_cuadro(["Escriba la utilidad deseada"])
+    utilidad_deseada = pedir_numero("Valor de la utilidad deseada: ", 0)
+
+    mostrar_cuadro(["Escriba el margen de contribución unitario"])
+    margen_contribucion_unitario = pedir_numero("Valor del margen de contribución unitario: ", 0)
+
+    mostrar_cuadro(["Escriba la tasa impositiva"])
+    tasa_impositiva = pedir_numero("Valor de la tasa impositiva (0 - 100): ", 0, 100) / 100
 
     unidades_despues_impuestos = (
         (costo_fijo_total + (utilidad_deseada / (1 - tasa_impositiva)))
@@ -435,19 +481,19 @@ def unidad_despues_de_impuestos_normal():
 
     contenido = [f'Unidades a vender después de impuestos: {unidades_despues_impuestos}']
 
-    mostrar_cuadro(contenido)
+    mostrar_cuadro(contenido, titulo='Resultado')
 
-    return unidades_despues_impuestos
+    if exportar:
+        return unidades_despues_impuestos
 
-def unidad_antes_de_impuestos_multilinea():
+def unidad_antes_de_impuestos_multilinea() -> None:
+    """Calcula las unidades antes de impuestos multilínea."""
 
-    contenido = ['PASO 1: Determinación de unidades antes de impuestos normal']
-    mostrar_cuadro(contenido)
+    mostrar_cuadro(['PASO 1: Determinación de unidades antes de impuestos normal'])
 
-    unidad_antes_impuestos = unidad_antes_de_impuestos_normal()
+    unidad_antes_impuestos = unidad_antes_de_impuestos_normal(exportar= True)
 
-    contenido = ['PASO 2: Ponderación']
-    mostrar_cuadro(contenido)
+    mostrar_cuadro(['PASO 2: Ponderación'])
 
     contador_productos = 1
     suma_porcentaje_participacion = 0
@@ -497,11 +543,13 @@ def unidad_antes_de_impuestos_multilinea():
         exportar_excel(df_datos, nombre_archivo="unidades_antes_de_impuestos")
 
 
-def unidad_despues_impuestos_multilinea():
+def unidad_despues_impuestos_multilinea() -> None:
+    """Calcula las unidades después de impuestos multilínea."""
+
     contenido = ['PASO 1: Determinación de unidades después de impuestos normal']
     mostrar_cuadro(contenido)
 
-    unidad_despues_impuestos = unidad_despues_de_impuestos_normal()
+    unidad_despues_impuestos = unidad_despues_de_impuestos_normal(exportar= True)
 
     contenido = ['PASO 2: Ponderación']
     mostrar_cuadro(contenido)
@@ -553,7 +601,10 @@ def unidad_despues_impuestos_multilinea():
     if preguntar_exportación():
         exportar_excel(df_datos, nombre_archivo="unidades_despues_de_impuestos")
 
-def analisis_cvu_menu():
+######################## ANÁLISIS COSTO - VOLUMEN - UTILIDAD ########################
+
+def analisis_cvu_menu() -> None:
+    """Muestra al usuario un menú para iniciar el análisis Costo - Volumen - Utilidad."""
 
     titulo = 'Análisis Costo - Volumen - Utilidad'
     subtitulo = '¿Qué quiere hacer?'
@@ -570,7 +621,8 @@ def analisis_cvu_menu():
             case 2:
                 return
 
-def analisis_cvu():
+def analisis_cvu() -> None:
+    """Se le muestra una interfaz al usuario para realizar el análisis Costo - Volumen - Utilidad."""
 
     print("\n")
     mostrar_cuadro(['Bienvenido al análisis Costo - Volumen - Utilidad'])
@@ -610,7 +662,7 @@ def analisis_cvu():
 
     num_propuestas = pedir_numero(f"{negrita('Escriba la cantidad de propuestas a realizar: ')}")
 
-    for propuesta in range(1, (num_propuestas + 1)): #Le añadimos uno porque el range no toma en cuenta el último valor
+    for propuesta in range(1, num_propuestas + 1): #Le añadimos uno porque el range no toma en cuenta el último valor
 
         propuestas[propuesta] = {}
 
@@ -662,18 +714,20 @@ def analisis_cvu():
         propuestas_calculos[propuesta]["Costo Fijo"] = propuestas[propuesta]["Costos Fijos"]
         propuestas_calculos[propuesta]["Utilidad de Operación"] = propuestas_calculos[propuesta]["Margen de Contribución"] - propuestas[propuesta]["Costos Fijos"]
 
-        df_propuestas_calculos = pd.DataFrame(propuestas_calculos)
-        df_propuestas = pd.DataFrame(propuestas)
+    df_propuestas_calculos = pd.DataFrame(propuestas_calculos)
+    df_propuestas = pd.DataFrame(propuestas)
 
-        print(tabulate(df_propuestas_calculos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
-        print(tabulate(df_propuestas, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+    print(tabulate(df_propuestas_calculos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+    print(tabulate(df_propuestas, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-        if preguntar_exportación():
-            exportar_excel(df_propuestas, df_propuestas_calculos, nombre_archivo="analisis_cvu")
+    if preguntar_exportación():
+        exportar_excel(df_propuestas, df_propuestas_calculos, nombre_archivo="analisis_cvu")
 
-        break
+######################## PRESUPUESTO DE VENTAS Y PRODUCCIÓN ########################
 
-def presupuesto_ventas_menu():
+def presupuesto_ventas_produccion_menu() -> None:
+    """Muestra al usuario un menú para escoger el presupuesto que hará."""
+
     titulo = "Presupuesto de ventas y producción"
     subtitulo = "Escoja el tipo de cálculo que le gustaría realizar"
     contenido = ['(1) - Presupuesto de ventas',
@@ -693,7 +747,16 @@ def presupuesto_ventas_menu():
                 return
 
 
-def presupuesto_ventas(exportar: bool = False):
+def presupuesto_ventas(exportar: bool = False) -> None | dict:
+    """Muestra una interfaz al usuario para realizar el presupuesto de ventas.
+
+    Args:
+        exportar (bool, optional): True si se quiere exportar el diccionario que contiene los datos del presupuesto. Defaults to False.
+
+    Returns:
+        None | dict: None si no se expecifica que se quiere exportar el diccionario.
+    """
+
     mostrar_cuadro(['Escriba la cantidad de productos que tiene'])
     num_productos = pedir_numero('Cantidad de productos: ', 0)
     datos = {}
@@ -721,7 +784,9 @@ def presupuesto_ventas(exportar: bool = False):
     if exportar:
         return datos
 
-def presupuesto_producción():
+def presupuesto_producción() -> None:
+    """Muestra una interfaz al usuario para la realización del presupuesto de producción."""
+
     mostrar_cuadro(['Primero necesita obtener la cantidad de ventas'])
     datos_ventas = presupuesto_ventas(exportar = True)
     datos_produccion = {}
@@ -740,6 +805,7 @@ def presupuesto_producción():
             "Producción requerida": produccion_requerida
         }
 
+    #En esta parte calculamos los datos de la columna de total para después añadirlos
     total_pronóstico_ventas = 0
     total_inventario_inicial = 0
     total_inventario_final = 0
@@ -765,6 +831,66 @@ def presupuesto_producción():
 
     if preguntar_exportación():
         exportar_excel(df_datos_producción, nombre_archivo="presupuesto_producción")
+
+######################## PRESUPUESTO DE NECESIDADES DE MATERIAS PRIMAS Y COMPRAS ########################
+
+def presupuesto_necesidades_menu() -> None:
+    """Muestra un menú para iniciar el prespuesto de necesidades de materias primas y compras."""
+
+    titulo = "Presupuesto de necesidades de materias primas y compras"
+    subtitulo = "Escoja el tipo de cálculo que le gustaría realizar"
+    contenido = ['(1) - Presupuesto de necesidades de materias primas y compras',
+            '(2) - Regresar al menú principal']
+
+    while True:
+        mostrar_cuadro(contenido, titulo, subtitulo)
+        opcion = pedir_numero('Escriba el número de la opción: ', 1, 3)
+
+        match opcion:
+            case 1:
+                presupuesto_necesidades()
+            case 2:
+                return
+
+def presupuesto_necesidades() -> None:
+    """Se le muestra una interfaz al usuario para la realización del presupuesto de necesidades de materias primas y compras."""
+
+    mostrar_cuadro(['Escriba la producción requerida'])
+    produccion_requerida = pedir_numero('Producción requerida: ', 0)
+
+    mostrar_cuadro(['Escriba la cantidad de componentes que tiene'])
+    num_componentes = pedir_numero('Cantidad de componentes: ', 0)
+
+    datos = {}
+
+    for componente in range(0, num_componentes):
+        mostrar_cuadro([f'Componente {componente + 1}'])
+        nombre = pedir_campo('Escriba el nombre del componente: ')
+        materia_prima_unidad = pedir_numero('Escriba la materia prima por unidad: ', 0)
+        materia_prima_produccion = produccion_requerida * materia_prima_unidad
+        inventario_final = pedir_numero('Escriba el inventario final deseado de materia prima: ', 0)
+        inventario_inicial = pedir_numero('Escriba el inventario inicial de materia prima: ', 0)
+        materia_prima_requerida = (materia_prima_produccion + inventario_final) - inventario_inicial
+        costo_materia_prima = pedir_numero('Escriba el costo de materia prima: ', 0)
+        compras_presupuestadas = materia_prima_requerida * costo_materia_prima
+
+        datos[nombre] = {
+            "Materia prima por unidad": materia_prima_unidad,
+            "Materia prima para la producción": materia_prima_produccion,
+            "Inventario final deseado de materia prima": inventario_final,
+            "Inventario inicial de materia prima": inventario_inicial,
+            "Materia prima requerida": materia_prima_requerida,
+            "Costo de materia prima": costo_materia_prima,
+            "Compras presupuestadas": compras_presupuestadas
+        }
+
+    df_datos = pd.DataFrame(datos)
+    df_datos.index = ['Materia prima por unidad', 'Materia prima para la producción', 'Inventario final deseado de materia prima', 'Inventario inicial de materia prima', 'Materia prima requerida', 'Costo de materia prima', 'Compras presupuestadas']
+
+    print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    if preguntar_exportación():
+        exportar_excel(df_datos, nombre_archivo="presupuesto_necesidades")
 
 ######################## MENÚ PRINCIPAL ########################
 def menu() -> None:
@@ -794,9 +920,9 @@ def menu() -> None:
                 case 3:
                     analisis_cvu_menu()
                 case 4:
-                    presupuesto_ventas_menu()
+                    presupuesto_ventas_produccion_menu()
                 case 5:
-                    pass
+                    presupuesto_necesidades_menu()
                 case 6:
                     break
         except Salir:
