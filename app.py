@@ -292,7 +292,7 @@ def punto_equilibrio_multilinea() -> None:
         mostrar_cuadro([f'Producto {contador_productos}'])
 
         nombre_producto = pedir_campo('Escriba el nombre del producto: ')
-        porcentaje_margen_contribucion = pedir_numero('Escriba el porcentaje del margen de contribución: ', 0, 100)
+        porcentaje_margen_contribucion = pedir_numero('Escriba el porcentaje del margen de contribución (Sin signo): ', 0, 100)
         suma_porcentaje += porcentaje_margen_contribucion
 
         if suma_porcentaje > 100:
@@ -530,7 +530,7 @@ def unidad_antes_de_impuestos_multilinea() -> None:
     while True:
         mostrar_cuadro([f'Producto {contador_productos}'])
         nombre_producto = pedir_campo('Escriba el nombre del producto: ')
-        porcentaje_participacion = pedir_numero('Escriba el porcentaje de participación (0 - 100): ', 0, 100)
+        porcentaje_participacion = pedir_numero('Escriba el porcentaje de participación (0 - 100) (Sin signo): ', 0, 100)
 
         suma_porcentaje_participacion += porcentaje_participacion
         if suma_porcentaje_participacion > 100:
@@ -591,7 +591,7 @@ def unidad_despues_impuestos_multilinea() -> None:
     while True:
         mostrar_cuadro([f'Producto {contador_productos}'])
         nombre_producto = pedir_campo('Escriba el nombre del producto: ')
-        porcentaje_participacion = pedir_numero('Escriba el porcentaje de participación (0 - 100): ', 0, 100)
+        porcentaje_participacion = pedir_numero('Escriba el porcentaje de participación (0 - 100) (Sin signo): ', 0, 100)
 
         suma_porcentaje_participacion += porcentaje_participacion
         if suma_porcentaje_participacion > 100:
@@ -726,7 +726,7 @@ def analisis_cvu() -> None:
             match opcion:
                 case 1:
                     mostrar_cuadro([f'Usted escogió aumentar el valor de {dato} en porcentaje'])
-                    cantidad_aumento = pedir_numero('Escriba el porcentaje que desea aumentar: ', 0, 100)
+                    cantidad_aumento = pedir_numero('Escriba el porcentaje que desea aumentar (0 - 100) (Sin signo): ', 0, 100)
                     propuestas[propuesta][dato] = dato_original * (1 + (cantidad_aumento / 100))
                 case 2:
                     mostrar_cuadro([f'Usted escogió aumentar el valor de {dato} en cantidad ($)'])
@@ -734,7 +734,7 @@ def analisis_cvu() -> None:
                     propuestas[propuesta][dato] = dato_original + cantidad_aumento
                 case 3:
                     mostrar_cuadro([f'Usted escogió disminuir el valor de {dato} en porcentaje'])
-                    cantidad_aumento = pedir_numero('Escriba el porcentaje que desea disminuir: ', 0, 100)
+                    cantidad_aumento = pedir_numero('Escriba el porcentaje que desea disminuir (0 - 100) (Sin signo): ', 0, 100)
                     propuestas[propuesta][dato] = dato_original - (dato_original * (cantidad_aumento / 100))
                 case 4:
                     mostrar_cuadro([f'Usted escogió disminuir el valor del {dato} en cantidad ($)'])
