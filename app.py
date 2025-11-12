@@ -21,6 +21,8 @@ def mostrar_aviso(descripcion: list[str], tipo: str = "Importante") -> None:
 
     match tipo:
         case "Importante":
+            print("\n")
+
             print("-"*90)
             print(f"|{'!!':^10}|", f"{negrita('AVISO'):^85}|", sep="")
             print(f"|{'!!':^10}|", f"{'-'*77:^77}|", sep="")
@@ -35,6 +37,8 @@ def mostrar_aviso(descripcion: list[str], tipo: str = "Importante") -> None:
             print("-"*90)
 
         case "Información":
+            print("\n")
+
             print("-"*90)
             print(f"|{'**':^10}|", f"{negrita('INFORMACIÓN'):^85}|", sep="")
             print(f"|{'':^10}|", f"{'-'*77:^77}|", sep="")
@@ -47,6 +51,8 @@ def mostrar_aviso(descripcion: list[str], tipo: str = "Importante") -> None:
             print("-"*90)
 
         case "Resultado":
+            print("\n")
+
             print("-"*90)
             print(f"|{'':^10}|", f"{negrita('RESULTADO'):^85}|", sep="")
             print(f"|{'====':^10}|", f"{'-'*77:^77}|", sep="")
