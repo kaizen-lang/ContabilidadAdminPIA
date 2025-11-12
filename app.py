@@ -910,7 +910,7 @@ def presupuesto_necesidades() -> None:
                    'por lo que puede requerir hacerlo muchas veces',
                    'si tiene muchos productos.'])
 
-    mostrar_cuadro(['Escriba la producción requerida'])
+    mostrar_cuadro(['Escriba la producción requerida para el producto'])
     produccion_requerida = pedir_numero('Producción requerida: ', 0)
 
     mostrar_cuadro(['Escriba la cantidad de componentes (o ingredientes) que utiliza para fabricar el producto'])
