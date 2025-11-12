@@ -80,7 +80,7 @@ def exportar_excel(*dataframes: pd.DataFrame, nombre_archivo: str = "resultado")
     except PermissionError:
         print("Error: El archivo ya está abierto. Ciérrelo y vuelva a intentarlo.")
     else:
-        mostrar_aviso(f'Archivo exportado exitosamente a {nombre_archivo}.xlsx', tipo = "Información")
+        mostrar_aviso([f'Archivo exportado exitosamente a {nombre_archivo}.xlsx'], tipo = "Información")
 
 def negrita(texto: str) -> str:
     """Retorna un F-string con un formato de negritas.
