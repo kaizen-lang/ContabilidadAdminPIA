@@ -673,10 +673,10 @@ def analisis_cvu() -> None:
 
     for dato in propuestas["actual"].keys():
         titulo = f'{dato}'
-        contenido = [f'Escriba el valor de {dato}']
+        contenido = [f'Escriba el valor numérico de {dato}']
         mostrar_cuadro(contenido, titulo)
 
-        valor = pedir_numero("Valor: ", 0)
+        valor = pedir_numero(f"Valor numérico de {dato}: ", 0)
         propuestas["actual"][dato] = valor
 
 
@@ -694,6 +694,10 @@ def analisis_cvu() -> None:
 
     print("\n")
 
+    mostrar_aviso(['A continuación, usted deberá introducir la cantidad de propuestas que tiene,',
+                   'las cuales se compararán con los datos que proporcionó anteriormente.'],
+                   tipo = "Información")
+
     num_propuestas = pedir_numero(f"{negrita('Escriba la cantidad de propuestas a realizar: ')}")
 
     for propuesta in range(1, num_propuestas + 1): #Le añadimos uno porque el range no toma en cuenta el último valor
@@ -708,11 +712,11 @@ def analisis_cvu() -> None:
 
             titulo = f"¿Qué quieres hacer con {dato}?"
             contenido = [
-                '(1) - Aumentar valor (%)',
+                '(1) - Aumentar valor (% porcentaje)',
                 '(2) - Aumentar valor (cantidad)',
-                '(3) - Disminuir valor (%)',
+                '(3) - Disminuir valor (% porcentaje)',
                 '(4) - Disminuir valor (cantidad)',
-                '(5) - Mantener valor'
+                '(5) - Mantener el valor actual'
             ]
 
             mostrar_cuadro(contenido, titulo)
@@ -721,19 +725,19 @@ def analisis_cvu() -> None:
 
             match opcion:
                 case 1:
-                    mostrar_cuadro(['Usted escogió aumentar el valor del dato en porcentaje'])
+                    mostrar_cuadro([f'Usted escogió aumentar el valor de {dato} en porcentaje'])
                     cantidad_aumento = pedir_numero('Escriba el porcentaje que desea aumentar: ', 0, 100)
                     propuestas[propuesta][dato] = dato_original * (1 + (cantidad_aumento / 100))
                 case 2:
-                    mostrar_cuadro(['Usted escogió aumentar el valor del dato en cantidad ($)'])
+                    mostrar_cuadro([f'Usted escogió aumentar el valor de {dato} en cantidad ($)'])
                     cantidad_aumento = pedir_numero('Escriba la cantidad que desea aumentar: ', 0)
                     propuestas[propuesta][dato] = dato_original + cantidad_aumento
                 case 3:
-                    mostrar_cuadro(['Usted escogió disminuir el valor del dato en porcentaje'])
+                    mostrar_cuadro([f'Usted escogió disminuir el valor de {dato} en porcentaje'])
                     cantidad_aumento = pedir_numero('Escriba el porcentaje que desea disminuir: ', 0, 100)
                     propuestas[propuesta][dato] = dato_original - (dato_original * (cantidad_aumento / 100))
                 case 4:
-                    mostrar_cuadro(['Usted escogió disminuir el valor del dato en cantidad ($)'])
+                    mostrar_cuadro([f'Usted escogió disminuir el valor del {dato} en cantidad ($)'])
                     cantidad_aumento = pedir_numero('Escriba la cantidad que desea disminuir: ', 0)
                     propuestas[propuesta][dato] = dato_original - cantidad_aumento
                 case 5:
@@ -796,13 +800,14 @@ def presupuesto_ventas(exportar: bool = False) -> None | dict:
 
     mostrar_cuadro(['Escriba la cantidad de productos que tiene'])
     num_productos = pedir_numero('Cantidad de productos: ', 0)
+
     datos = {}
 
     for producto in range(0, num_productos):
         mostrar_cuadro([f'Producto {producto + 1}'])
         nombre = pedir_campo('Escriba el nombre del producto: ')
         pronostico_ventas = pedir_numero('Pronóstico de ventas: ', 0)
-        precio_unitario = pedir_numero('Precio unitario (escriba 1 si no aplica): ', 1)
+        precio_unitario = pedir_numero('Precio unitario (escriba el número 1 si no tiene este dato): ', 1)
         ventas_presupuestadas = pronostico_ventas * precio_unitario
 
         datos[nombre] = {
@@ -816,7 +821,7 @@ def presupuesto_ventas(exportar: bool = False) -> None | dict:
 
     exportar_excel(df_datos, nombre_archivo="presupuesto_ventas")
 
-    mostrar_cuadro(['Resultado'])
+    mostrar_cuadro(['Resultado del presupuesto de ventas'])
     print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
     sleep(5)
@@ -827,8 +832,11 @@ def presupuesto_ventas(exportar: bool = False) -> None | dict:
 def presupuesto_producción() -> None:
     """Muestra una interfaz al usuario para la realización del presupuesto de producción."""
 
-    mostrar_cuadro(['Primero necesita obtener la cantidad de ventas'])
+    mostrar_aviso(['Primero usted deberá realizar el presupuesto de ventas,'
+                   'debido a que se requieren ciertos datos de este.'], tipo = "Información")
     datos_ventas = presupuesto_ventas(exportar = True)
+
+    mostrar_aviso(['A continuación, se iniciará el proceso del presupuesto de producción'], tipo = "Información")
     datos_produccion = {}
 
     for producto, informacion in datos_ventas.items():
@@ -870,7 +878,7 @@ def presupuesto_producción() -> None:
 
     exportar_excel(df_datos_producción, nombre_archivo="presupuesto_producción")
 
-    mostrar_cuadro(['Resultado'])
+    mostrar_cuadro(['Resultado del presupuesto de producción'])
     print(tabulate(df_datos_producción, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
     sleep(5)
@@ -898,10 +906,14 @@ def presupuesto_necesidades_menu() -> None:
 def presupuesto_necesidades() -> None:
     """Se le muestra una interfaz al usuario para la realización del presupuesto de necesidades de materias primas y compras."""
 
+    mostrar_aviso(['En este programa, este presupuesto se hará por producto',
+                   'por lo que puede requerir hacerlo muchas veces',
+                   'si tiene muchos productos.'])
+
     mostrar_cuadro(['Escriba la producción requerida'])
     produccion_requerida = pedir_numero('Producción requerida: ', 0)
 
-    mostrar_cuadro(['Escriba la cantidad de componentes que tiene'])
+    mostrar_cuadro(['Escriba la cantidad de componentes (o ingredientes) que utiliza para fabricar el producto'])
     num_componentes = pedir_numero('Cantidad de componentes: ', 0)
 
     datos = {}
