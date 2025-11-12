@@ -1,6 +1,7 @@
 ######################## IMPORT Y OPCIONES GLOBALES ########################
 import pandas as pd
 from tabulate import tabulate
+from time import sleep
 
 #Cambiamos el formato de los tipos de dato float
 pd.set_option('display.float_format', lambda x: '%.9f' % x)
@@ -9,6 +10,55 @@ pd.set_option('display.float_format', lambda x: '%.9f' % x)
 class Salir(Exception):
     """Excepción usada para regresar al menú principal."""
     pass
+
+def mostrar_aviso(descripcion: list[str], tipo: str = "Importante") -> None:
+    """Muestra un aviso al usuario.
+
+    Args:
+        descripcion (list[str]): Lista de strings con el contenido.
+        tipo (str, optional): Tipo de aviso. Puede ser "Importante", "Información" o "Resultado". Defaults to "Importante".
+    """
+
+    match tipo:
+        case "Importante":
+            print("-"*90)
+            print(f"|{'!!':^10}|", f"{negrita('AVISO'):^85}|", sep="")
+            print(f"|{'!!':^10}|", f"{'-'*77:^77}|", sep="")
+            print(f"|{'!!':^10}|", f"{' ':^77}|", sep="")
+
+            for texto in descripcion:
+                print(f"|{'!!':^10}|", f"{texto:^77}|", sep="")
+
+            print(f"|{'':^10}|", f"{'':^77}|", sep="")
+            print(f"|{'**':^10}|", f"{' ':^77}|", sep="")
+
+            print("-"*90)
+
+        case "Información":
+            print("-"*90)
+            print(f"|{'**':^10}|", f"{negrita('INFORMACIÓN'):^85}|", sep="")
+            print(f"|{'':^10}|", f"{'-'*77:^77}|", sep="")
+            print(f"|{'II':^10}|", f"{' ':^77}|", sep="")
+
+            for texto in descripcion:
+                print(f"|{'II':^10}|", f"{texto:^77}|", sep="")
+
+            print(f"|{'II':^10}|", f"{' ':^77}|", sep="")
+            print("-"*90)
+
+        case "Resultado":
+            print("-"*90)
+            print(f"|{'':^10}|", f"{negrita('RESULTADO'):^85}|", sep="")
+            print(f"|{'====':^10}|", f"{'-'*77:^77}|", sep="")
+            print(f"|{'====':^10}|", f"{''*77:^77}|", sep="")
+
+            for texto in descripcion:
+                print(f"|{'':^10}|", f"{texto:^77}|", sep="")
+
+            print(f"|{'====':^10}|", f"{'':^77}|", sep="")
+            print(f"|{'====':^10}|", f"{'':^77}|", sep="")
+            print(f"|{'':^10}|", f"{' ':^77}|", sep="")
+            print("-"*90)
 
 def exportar_excel(*dataframes: pd.DataFrame, nombre_archivo: str = "resultado") -> None:
     """Exporta uno o más dataframes a excel.
@@ -29,28 +79,8 @@ def exportar_excel(*dataframes: pd.DataFrame, nombre_archivo: str = "resultado")
                     dataframe.to_excel(writer, sheet_name=f'Hoja {hoja + 1}')
     except PermissionError:
         print("Error: El archivo ya está abierto. Ciérrelo y vuelva a intentarlo.")
-
-def preguntar_exportación() -> bool:
-    """Pregunta al usuario si quiere exportar los datos a excel.
-
-    Returns:
-        bool: True si es afirmativo, False si es negativo.
-    """
-
-    titulo = '¿Desea exportar los resultados a EXCEL?'
-    contenido = [
-        '(S) - Sí',
-        '(N) - No'
-    ]
-
-    mostrar_cuadro(contenido, titulo)
-
-    exportar = pedir_campo("Respuesta: ").capitalize()
-
-    if exportar == "S":
-        return True
     else:
-        return False
+        mostrar_aviso(f'Archivo exportado exitosamente a {nombre_archivo}.xlsx', tipo = "Información")
 
 def negrita(texto: str) -> str:
     """Retorna un F-string con un formato de negritas.
@@ -231,7 +261,9 @@ def punto_equilibrio_normal() -> None:
             f'El punto de equilibrio en pesos es: ${punto_equilibrio_pesos:,.2f}'
         ]
 
-        mostrar_cuadro(contenido, titulo='Resultado')
+        mostrar_aviso(contenido, tipo='Resultado')
+
+        sleep(5)
 
     except ZeroDivisionError:
         print(f"{negrita('Error')}: división por cero.")
@@ -250,24 +282,23 @@ def punto_equilibrio_multilinea() -> None:
 
     #Recolección de datos
     while True:
-        print("-"*92)
-        print(f"|{negrita(f'Producto {contador_productos}'):^98}|")
-        print("-"*92)
+
+        mostrar_cuadro([f'Producto {contador_productos}'])
 
         nombre_producto = pedir_campo('Escriba el nombre del producto: ')
         porcentaje_margen_contribucion = pedir_numero('Escriba el porcentaje del margen de contribución: ', 0, 100)
         suma_porcentaje += porcentaje_margen_contribucion
 
         if suma_porcentaje > 100:
-            titulo = 'ADVERTENCIA'
-            subtitulo = 'La suma de porcentajes proporcionada hasta ahora supera el 100%'
+            mostrar_aviso(['La suma del porcentaje superó el 100%'])
+
             contenido = [
                 '¿Está seguro de querer continuar?',
                 '(S) - Sí',
                 '(N) - No'
             ]
 
-            mostrar_cuadro(contenido, titulo, subtitulo)
+            mostrar_cuadro(contenido)
 
             print("\n")
             confirmar = pedir_campo("Respuesta: ").capitalize()
@@ -290,6 +321,8 @@ def punto_equilibrio_multilinea() -> None:
             '(N) - No'
         ]
 
+        mostrar_cuadro(contenido)
+
         continuar = pedir_campo("Respuesta: ").capitalize()
 
         if continuar == "N":
@@ -301,10 +334,6 @@ def punto_equilibrio_multilinea() -> None:
 
     #Pedimos el costo fijo para las operaciones posteriores
     costo_fijo = pedir_numero('Escriba el costo fijo: ', 0)
-
-    print("\n")
-    print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
-
 
     #Parte donde se calcula el margen de contribución ponderado y unitario
     margen_ponderado = {}
@@ -326,19 +355,8 @@ def punto_equilibrio_multilinea() -> None:
     df_margen_ponderado = pd.DataFrame(margen_ponderado)
     df_margen_ponderado.index = ['Margen de contribución', 'Porcentaje del margen de contribución', 'Margen de contribución ponderado']
 
-    print("\n")
-    print(tabulate(df_margen_ponderado, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
-
-
     #Parte donde calculamos el punto de equilibrio en unidades y su ponderación
     punto_equilibrio_unidades = costo_fijo / margen_contribucion_unitario
-
-    contenido = [
-        f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades:,.2f}',
-        'A continuación se mostrará la ponderación'
-    ]
-
-    mostrar_cuadro(contenido)
 
     dict_punto_equilibrio_unidades = {}
     for producto, informacion in datos.items():
@@ -351,11 +369,6 @@ def punto_equilibrio_multilinea() -> None:
 
     df_punto_equilibrio_unidades = pd.DataFrame(dict_punto_equilibrio_unidades)
     df_punto_equilibrio_unidades.index = ['Porcentaje del margen de contribución', 'Punto de equilibrio en unidades', 'Punto de equilibrio por unidad']
-
-    print("\n")
-    #Usamos la matriz transpuesta para cambiar las columnas por las filas.
-    print(tabulate(df_punto_equilibrio_unidades.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
-
 
     #Parte donde calculamos el punto de equilibrio en pesos
     dict_punto_equilibrio_pesos = {}
@@ -373,24 +386,32 @@ def punto_equilibrio_multilinea() -> None:
     df_punto_equilibrio_pesos = pd.DataFrame(dict_punto_equilibrio_pesos)
     df_punto_equilibrio_pesos.index = ['Punto de equilibrio por unidad', 'Precio de venta', 'Punto de equilibrio en pesos']
 
-    print("\n")
+    mostrar_aviso(['Su resultado se encuentra listo'], tipo = "Información")
+
+    exportar_excel(df_datos, df_margen_ponderado, df_punto_equilibrio_unidades, df_punto_equilibrio_pesos, nombre_archivo="punto_equilibrio")
+
+    #Usamos las matrices transpuestas porque intercambiar las filas por las columnas.
+    descripcion = [
+        f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}',
+        f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}'
+    ]
+    mostrar_aviso(descripcion, tipo = "Resultado")
+
+    mostrar_aviso(['A continuación se mostrarán las tablas'], tipo = "Información")
+
+    mostrar_cuadro(['Datos'])
+    print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    mostrar_cuadro(['Ponderación de margen'])
+    print(tabulate(df_margen_ponderado, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    mostrar_cuadro(['Ponderación de punto de equilibrio (unidades)'])
+    print(tabulate(df_punto_equilibrio_unidades.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
+
+    mostrar_cuadro(['Ponderación de punto de equilibrio (pesos)'])
     print(tabulate(df_punto_equilibrio_pesos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
-    print("\n")
 
-
-    #Impresión de resultados
-    contenido = [
-            f'El punto de equilibrio en unidades es: {punto_equilibrio_unidades}',
-            f'El punto de equilibrio en pesos es: ${total_punto_equilibrio_pesos:,.2f}'
-        ]
-
-    mostrar_cuadro(contenido, titulo='Resultado')
-
-    if preguntar_exportación():
-        exportar_excel(df_datos, df_margen_ponderado, df_punto_equilibrio_unidades, df_punto_equilibrio_pesos, nombre_archivo="punto_equilibrio")
-
-    #En esta ocasión lo usamos para que el usuario pueda ver los resultados y escoja si regresar o no al menú.
-    pedir_salida()
+    sleep(5)
 
 ######################## UNIDADES ANTES Y DESPUÉS DE IMPUESTOS ########################
 def unidades_impuestos_menu() -> None:
@@ -447,8 +468,9 @@ def unidad_antes_de_impuestos_normal(exportar: bool = False) -> None | float:
     unidades_antes_impuestos = (costo_fijo_total + utilidad_deseada) / margen_contribucion_unitario
 
     contenido = [f'Unidades a vender antes de impuestos: {unidades_antes_impuestos}']
+    mostrar_aviso(contenido, tipo = 'Resultado')
 
-    mostrar_cuadro(contenido, titulo='Resultado')
+    sleep(5)
 
     if exportar:
         return unidades_antes_impuestos
@@ -480,8 +502,7 @@ def unidad_despues_de_impuestos_normal(exportar: bool = False) -> None | float:
         / margen_contribucion_unitario)
 
     contenido = [f'Unidades a vender después de impuestos: {unidades_despues_impuestos}']
-
-    mostrar_cuadro(contenido, titulo='Resultado')
+    mostrar_aviso(contenido, tipo = 'Resultado')
 
     if exportar:
         return unidades_despues_impuestos
@@ -489,11 +510,11 @@ def unidad_despues_de_impuestos_normal(exportar: bool = False) -> None | float:
 def unidad_antes_de_impuestos_multilinea() -> None:
     """Calcula las unidades antes de impuestos multilínea."""
 
-    mostrar_cuadro(['PASO 1: Determinación de unidades antes de impuestos normal'])
+    mostrar_aviso(['Primero deberá determinar la utilidad antes de impuestos normal'], tipo = "Información")
 
     unidad_antes_impuestos = unidad_antes_de_impuestos_normal(exportar= True)
 
-    mostrar_cuadro(['PASO 2: Ponderación'])
+    mostrar_aviso(['A continuación, deberá especificar los datos de los productos que tiene.'], tipo = "Información")
 
     contador_productos = 1
     suma_porcentaje_participacion = 0
@@ -507,12 +528,15 @@ def unidad_antes_de_impuestos_multilinea() -> None:
 
         suma_porcentaje_participacion += porcentaje_participacion
         if suma_porcentaje_participacion > 100:
-            título = 'ADVERTENCIA'
-            subtítulo = 'La suma de porcentaje de participación excede del 100%'
-            contenido = ['¿Quiere continuar?',
-                         '(S) - Sí',
-                         '(N) - No']
-            mostrar_cuadro(contenido, título, subtítulo)
+            mostrar_aviso(['La suma del porcentaje superó el 100%'])
+
+            contenido = [
+                '¿Está seguro de querer continuar?',
+                '(S) - Sí',
+                '(N) - No'
+            ]
+
+            mostrar_cuadro(contenido)
 
             continuar = pedir_campo(f"{negrita('Escriba su respuesta: ')}").capitalize()
 
@@ -537,22 +561,21 @@ def unidad_antes_de_impuestos_multilinea() -> None:
     df_datos = pd.DataFrame(datos)
     df_datos.index = ['% Participación', 'Total Uds', 'Uds. antes de impuestos']
 
+    exportar_excel(df_datos.T, nombre_archivo="unidades_antes_de_impuestos")
+
+    mostrar_cuadro(['Ponderación'])
     print(tabulate(df_datos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    if preguntar_exportación():
-        exportar_excel(df_datos, nombre_archivo="unidades_antes_de_impuestos")
-
+    sleep(5)
 
 def unidad_despues_impuestos_multilinea() -> None:
     """Calcula las unidades después de impuestos multilínea."""
 
-    contenido = ['PASO 1: Determinación de unidades después de impuestos normal']
-    mostrar_cuadro(contenido)
+    mostrar_aviso(['Primero deberá determinar la utilidad antes de impuestos normal'], tipo = "Información")
 
     unidad_despues_impuestos = unidad_despues_de_impuestos_normal(exportar= True)
 
-    contenido = ['PASO 2: Ponderación']
-    mostrar_cuadro(contenido)
+    mostrar_aviso(['A continuación, deberá especificar los datos de los productos que tiene.'], tipo = "Información")
 
     contador_productos = 1
     suma_porcentaje_participacion = 0
@@ -566,12 +589,15 @@ def unidad_despues_impuestos_multilinea() -> None:
 
         suma_porcentaje_participacion += porcentaje_participacion
         if suma_porcentaje_participacion > 100:
-            título = 'ADVERTENCIA'
-            subtítulo = 'La suma de porcentaje de participación excede del 100%'
-            contenido = ['¿Quiere continuar?',
-                         '(S) - Sí',
-                         '(N) - No']
-            mostrar_cuadro(contenido, título, subtítulo)
+            mostrar_aviso(['La suma del porcentaje superó el 100%'])
+
+            contenido = [
+                '¿Está seguro de querer continuar?',
+                '(S) - Sí',
+                '(N) - No'
+            ]
+
+            mostrar_cuadro(contenido)
 
             continuar = pedir_campo(f"{negrita('Escriba su respuesta: ')}").capitalize()
 
@@ -596,10 +622,12 @@ def unidad_despues_impuestos_multilinea() -> None:
     df_datos = pd.DataFrame(datos)
     df_datos.index = ['% Participación', 'Total Uds', 'Uds. después de impuestos']
 
+    exportar_excel(df_datos, nombre_archivo="unidades_despues_de_impuestos")
+
+    mostrar_cuadro(['Ponderación'])
     print(tabulate(df_datos.T, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    if preguntar_exportación():
-        exportar_excel(df_datos, nombre_archivo="unidades_despues_de_impuestos")
+    sleep(5)
 
 ######################## ANÁLISIS COSTO - VOLUMEN - UTILIDAD ########################
 
@@ -717,11 +745,14 @@ def analisis_cvu() -> None:
     df_propuestas_calculos = pd.DataFrame(propuestas_calculos)
     df_propuestas = pd.DataFrame(propuestas)
 
+
+    exportar_excel(df_propuestas, df_propuestas_calculos, nombre_archivo="analisis_cvu")
+
+    mostrar_cuadro(['Análisis'])
     print(tabulate(df_propuestas_calculos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
     print(tabulate(df_propuestas, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    if preguntar_exportación():
-        exportar_excel(df_propuestas, df_propuestas_calculos, nombre_archivo="analisis_cvu")
+    sleep(5)
 
 ######################## PRESUPUESTO DE VENTAS Y PRODUCCIÓN ########################
 
@@ -776,10 +807,13 @@ def presupuesto_ventas(exportar: bool = False) -> None | dict:
 
     df_datos = pd.DataFrame(datos)
     df_datos.index = ['Pronóstico de ventas', 'Precio unitario', 'Ventas presupuestadas']
+
+    exportar_excel(df_datos, nombre_archivo="presupuesto_ventas")
+
+    mostrar_cuadro(['Resultado'])
     print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    if preguntar_exportación():
-        exportar_excel(df_datos, nombre_archivo="presupuesto_ventas")
+    sleep(5)
 
     if exportar:
         return datos
@@ -827,10 +861,13 @@ def presupuesto_producción() -> None:
 
     df_datos_producción = pd.DataFrame(datos_produccion)
     df_datos_producción.index = ['Pronóstico de ventas', 'Inventario final', 'Inventario inicial', 'Producción requerida']
+
+    exportar_excel(df_datos_producción, nombre_archivo="presupuesto_producción")
+
+    mostrar_cuadro(['Resultado'])
     print(tabulate(df_datos_producción, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    if preguntar_exportación():
-        exportar_excel(df_datos_producción, nombre_archivo="presupuesto_producción")
+    sleep(5)
 
 ######################## PRESUPUESTO DE NECESIDADES DE MATERIAS PRIMAS Y COMPRAS ########################
 
@@ -887,10 +924,12 @@ def presupuesto_necesidades() -> None:
     df_datos = pd.DataFrame(datos)
     df_datos.index = ['Materia prima por unidad', 'Materia prima para la producción', 'Inventario final deseado de materia prima', 'Inventario inicial de materia prima', 'Materia prima requerida', 'Costo de materia prima', 'Compras presupuestadas']
 
+    exportar_excel(df_datos, nombre_archivo="presupuesto_necesidades")
+
+    mostrar_cuadro(['Resultado'])
     print(tabulate(df_datos, headers='keys', tablefmt='psql', floatfmt=",.2f", numalign="center", intfmt=","))
 
-    if preguntar_exportación():
-        exportar_excel(df_datos, nombre_archivo="presupuesto_necesidades")
+    sleep(5)
 
 ######################## MENÚ PRINCIPAL ########################
 def menu() -> None:
